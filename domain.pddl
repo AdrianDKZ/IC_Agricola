@@ -174,11 +174,11 @@
   ;; Construye una habitacion
   (:action contruir-habitacion
   	:parameters
-      (?j - jugadores)
-      (?m - materiales)
+      (?j - jugadores ?m - materiales)
     :precondition
       (and
 	      (ronda JORNADA)
+	      (numero-jugador ?j)
 	      (> (huecos ?j) 0)
 	      (material_casa ?j ?m)
 	      (>= (recursos ?j JUNCO) 2)
@@ -200,11 +200,11 @@
    ;; Construye una habitacion
   (:action reformar-casa
   	:parameters
-      (?j - jugadores)
-      (?m1 ?m2 - materiales)
+      (?j - jugadores ?m1 ?m2 - materiales)
     :precondition
       (and
 	      (ronda JORNADA)
+	      (numero-jugador ?j)
 	      (material_casa ?j ?m1)
 	      (next-material ?m1 ?m2)
 	      (>= (recursos ?j JUNCO) 1)
@@ -222,4 +222,24 @@
         (ronda ROTA_TURNO)
       )
   )
+
+  ;; Ampliar familia con habtaciones para todos los miembros
+  (:action ampliar-familia
+  	:parameters
+      (?j - jugadores)
+    :precondition
+      (and
+      	(ronda JORNADA)
+	    (numero-jugador ?j)
+	    (< (familiares-jugador ?j) (habitaciones ?j))
+	  )
+    :effect
+      (and
+      	(increase (familiares-jugador ?j) 1)
+        (not (ronda JORNADA))
+        (ronda ROTA_TURNO)
+      )
+  )
+
+  
 )
