@@ -4,13 +4,14 @@
   ;; "equality" para poder hacer comparaciones de igualdad con =
   (:requirements :strips :typing :fluents :equality)
 
-  (:types fase-ronda fase-juego contador jugadores)
+  (:types fase-ronda fase-juego contador jugadores materiales)
 
   (:constants
     INICIO JORNADA ROTA_TURNO FIN - fase-ronda
     RONDAS FIN - fase-juego
     UNO DOS TRES CUATRO - contador
     J1 J2 - jugadores
+    MADERA ADOBE PIEDRA - materiales
   )
 
   (:functions
@@ -18,6 +19,11 @@
     (familiar-actual)
     ;; Total de familiares de cada jugador
     (familiares-jugador ?fj - jugadores)
+    ;; Numero de huecos restantes
+    (huecos ?j - jugadores)
+    ;; Numero de habitaciones del jugador
+    (habitaciones ?j - jugadores)
+
   )
 
   (:predicates
@@ -33,6 +39,10 @@
     (ronda ?r - fase-ronda)
     ;; Fase de juego actual
     (partida ?p - fase-juego)
+    ;; Material del que estan hechas las habitaciones
+    (material_casa ?j - jugadores ?m - materiales)
+    ;; Cambio de material de las habitaciones
+    (next-material ?m1 ?m2 - materiales)
   )
 
   ;; Cambia el familiar del jugador actual
@@ -157,6 +167,59 @@
       (and
         (not (partida RONDAS))
         (partida FIN)
+      )
+  )
+
+
+  ;; Construye una habitacion
+  (:action contruir-habitacion
+  	:parameters
+      (?j - jugadores)
+      (?m - materiales)
+    :precondition
+      (and
+	      (ronda JORNADA)
+	      (> (huecos ?j) 0)
+	      (material_casa ?j ?m)
+	      (>= (recursos ?j JUNCO) 2)
+	      (>= (recursos ?j ?m) 5)
+      )
+    :effect
+      (and
+      	;; Acciones
+      	(decrease (huecos ?j) 1)
+      	(decrease (recursos ?j JUNCO) 2)
+      	(decrease (recursos ?j ?m) 5)
+      	(increase (habitaciones ?j) 1)
+      	;; Control
+        (not (ronda JORNADA))
+        (ronda ROTA_TURNO)
+      )
+  )
+
+   ;; Construye una habitacion
+  (:action reformar-casa
+  	:parameters
+      (?j - jugadores)
+      (?m1 ?m2 - materiales)
+    :precondition
+      (and
+	      (ronda JORNADA)
+	      (material_casa ?j ?m1)
+	      (next-material ?m1 ?m2)
+	      (>= (recursos ?j JUNCO) 1)
+	      (>= (recursos ?j ?m2) (habitaciones ?j))
+      )
+    :effect
+      (and
+      	;; Acciones
+      	(not (material_casa ?j ?m1))
+      	(material_casa ?j ?m2)
+      	(decrease (recursos ?j JUNCO) 1)
+      	(decrease (recursos ?j ?m2) (habitaciones ?j))
+      	;; Control
+        (not (ronda JORNADA))
+        (ronda ROTA_TURNO)
       )
   )
 )
