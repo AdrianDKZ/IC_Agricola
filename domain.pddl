@@ -4,7 +4,7 @@
   ;; "equality" para poder hacer comparaciones de igualdad con =
   (:requirements :strips :typing :fluents :equality)
 
-  (:types fase-ronda fase-juego num-ronda jugadores posesiones)
+  (:types boolean fase-ronda fase-juego num-ronda jugadores posesiones acciones)
 
   (:constants
     REPOSICION INICIO JORNADA ROTA_TURNO FIN COSECHA - fase-ronda
@@ -12,8 +12,7 @@
     UNO DOS TRES CUATRO - num-ronda
     J1 J2 - jugadores
     MADERA ADOBE PIEDRA JUNCO CEREAL HORTALIZA COMIDA OVEJA JABALI VACA - posesiones
-    ADOBE JUNCO MADERA PIEDRA JABALI OVEJA VACA COMIDA - recursos_acumulables
-    JUNCO CEREAL HORTALIZA COMIDA - recursos_noacumulables
+    COGER COGER-ACUM REFORMAR CONS-HAB AMPLIAR ARAR VALLAR - acciones
   )
 
   (:functions
@@ -28,7 +27,11 @@
     ;; Contadores para las posesiones del jugador
     (recursos ?j - jugadores ?pos - posesiones)
     ;; Contador asociado a los recursos acumulables
-    (acumulado ?r - recursos_acumulables)
+    (acumulado ?r - posesiones)
+    ;; Campos arados
+    (arado ?j - jugadores)
+    ;; Numero de pastos vallados
+    (vallado ?j - jugadores)
   )
 
   (:predicates
@@ -48,6 +51,10 @@
     (next-material ?m1 ?m2 - posesiones)
     ;; Material del que estan hechas las habitaciones
     (material_casa ?j - jugadores ?m - posesiones)
+    ;; Acciones de coger recursos
+    (accion-coger ?a - acciones ?m - posesiones)
+    ;; Resto de acciones sin tipo requerido
+    (accion ?a - acciones)
   )
 
   ;; Cambia el familiar del jugador actual
@@ -106,15 +113,12 @@
 
   ;; Si todos los jugadores han movido todos sus familiares, la ronda termina
   (:action fin-ronda
-    :parameters
-      (?j - jugadores)
     :precondition
       (and
         ;; Comprueba que es el ultimo jugador
-        (jugador-actual ?j)
         (jugador-actual J2)
         ;; Comprueba que se han movido todos los familiares del ultimo jugador
-        (= (familiar-actual) (familiares-jugador ?j))
+        (= (familiar-actual) (familiares-jugador J2))
         (fase-ronda ROTA_TURNO)
       )
     :effect
@@ -141,7 +145,7 @@
     :effect
       (and
         (not (fase-ronda FIN))
-        (fase-ronda INICIO)
+        (fase-ronda REPOSICION)
         (not (ronda-actual ?c1))
         (ronda-actual ?c2)
       )
@@ -180,6 +184,24 @@
       )
     :effect
       (and
+      	;; Habilitar acciones
+	      	(accion-coger COGER JUNCO)
+		    (accion-coger COGER CEREAL)
+		    (accion-coger COGER HORTALIZA)
+		    (accion-coger COGER COMIDA)
+		    (accion-coger COGER-ACUM ADOBE)
+		    (accion-coger COGER-ACUM JUNCO)
+		    (accion-coger COGER-ACUM MADERA)
+		    (accion-coger COGER-ACUM PIEDRA)
+		    (accion-coger COGER-ACUM JABALI)
+		    (accion-coger COGER-ACUM OVEJA)
+		    (accion-coger COGER-ACUM VACA)
+		    (accion-coger COGER-ACUM COMIDA)
+		    (accion AMPLIAR)
+		    (accion REFORMAR)
+		    (accion CONS-HAB)
+		    (accion ARAR)
+		    (accion VALLAR)
         ;; Control
         (not (fase-ronda INICIO))
         (fase-ronda JORNADA)
@@ -206,14 +228,16 @@
   ;; Recoge una unidad de un recurso no acumulable
   (:action ACCION_Coger-Recurso
     :parameters
-      (?j - jugadores ?r - recursos_noacumulables)
+      (?j - jugadores ?r - posesiones)
     :precondition
       (and
         (fase-ronda JORNADA)
+        (accion-coger COGER ?r)
       )
     :effect
       (and
         (increase (recursos ?j ?r) 1)
+        (not (accion-coger COGER ?r))
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)
       )
@@ -222,15 +246,17 @@
   ;; Recoge un recurso de la reserva (acumulable; se lleva todo lo que hay)
   (:action ACCION_Coger-Acumulable
     :parameters
-      (?j - jugadores ?r - recursos_acumulables)
+      (?j - jugadores ?r - posesiones)
     :precondition
       (and
         (fase-ronda JORNADA)
+        (accion-coger COGER-ACUM ?r)
         (> (acumulado ?r) 0)
       )
     :effect
       (and
         ;; Acciones
+        (not (accion-coger COGER-ACUM ?r))
         (increase (recursos ?j ?r) (acumulado ?r))
         (assign (acumulado ?r) 0)
         ;; Control
@@ -245,6 +271,7 @@
       (?j - jugadores ?m - posesiones)
     :precondition
       (and
+      	  (accion CONS-HAB)
 	      (fase-ronda JORNADA)
 	      (jugador-actual ?j)
 	      (> (huecos ?j) 0)
@@ -255,6 +282,7 @@
     :effect
       (and
       	;; Acciones
+      	(not (accion CONS-HAB))
       	(decrease (huecos ?j) 1)
       	(decrease (recursos ?j JUNCO) 2)
       	(decrease (recursos ?j ?m) 5)
@@ -271,6 +299,7 @@
       (?j - jugadores ?m1 ?m2 - posesiones)
     :precondition
       (and
+      	  (accion REFORMAR)
 	      (fase-ronda JORNADA)
 	      (jugador-actual ?j)
 	      (material_casa ?j ?m1)
@@ -281,6 +310,7 @@
     :effect
       (and
       	;; Acciones
+      	(not (accion REFORMAR))
       	(not (material_casa ?j ?m1))
       	(material_casa ?j ?m2)
       	(decrease (recursos ?j JUNCO) 1)
@@ -297,6 +327,7 @@
       (?j - jugadores)
     :precondition
       (and
+      	(accion AMPLIAR)
       	(fase-ronda JORNADA)
 	    (jugador-actual ?j)
 	    (< (familiares-jugador ?j) (habitaciones ?j))
@@ -304,6 +335,57 @@
     :effect
       (and
       	(increase (familiares-jugador ?j) 1)
+      	(not (accion AMPLIAR))
+        (not (fase-ronda JORNADA))
+        (fase-ronda ROTA_TURNO)
+      )
+  )
+
+  (:action ACCION_Arar
+  	:parameters
+      (?j - jugadores)
+    :precondition
+      (and
+      	  ;; Control
+      	  (accion ARAR)
+	      (fase-ronda JORNADA)
+	      (jugador-actual ?j)
+	      ;; Acciones
+	      (> (huecos ?j) 0)
+      )
+    :effect
+      (and
+      	;; Acciones
+      	(decrease (huecos ?j) 1)	
+      	(increase (arado ?j) 1)
+      	;; Control
+      	(not (accion ARAR))
+        (not (fase-ronda JORNADA))
+        (fase-ronda ROTA_TURNO)
+      )
+  )
+
+  (:action ACCION_Vallar
+  	:parameters
+      (?j - jugadores)
+    :precondition
+      (and
+      	  ;; Control
+      	  (accion VALLAR)
+	      (fase-ronda JORNADA)
+	      (jugador-actual ?j)
+	      ;; Acciones
+	      (> (huecos ?j) 0)
+	      (> (recursos ?j MADERA) 4)
+      )
+    :effect
+      (and
+      	;; Acciones
+      	(decrease (huecos ?j) 1)	
+      	(increase (vallado ?j) 1)
+      	(decrease (recursos ?j MADERA) 4)
+      	;; Control
+      	(not (accion VALLAR))
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)
       )

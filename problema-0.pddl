@@ -1,6 +1,5 @@
-(define (problem asdfg) (:domain AGRICOLA)
+(define (problem desarrollo) (:domain AGRICOLA)
   (:objects
-  	J1 J2 - jugadores
   )
   (:init
     ;; Ronda y mecanismos de iteracion
@@ -46,10 +45,16 @@
 	  ;; Familiares
     	(= (familiares-jugador J1) 2)
     	(= (familiares-jugador J2) 2)
+      ;; Campos arados
+      	(= (arado J1) 0)
+      	(= (arado J2) 0)
+      ;; Pastos vallados
+      	(= (vallado J1) 0)
+      	(= (vallado J2) 0)
     ;; Constantes del problema
-    (next-jugador J1 J2)
-    (next-material MADERA ADOBE) (next-material ADOBE PIEDRA)
-    (next-ronda UNO DOS) (next-ronda DOS TRES) (next-ronda TRES CUATRO)
+	    (next-jugador J1 J2)
+	    (next-material MADERA ADOBE) (next-material ADOBE PIEDRA)
+	    (next-ronda UNO DOS) (next-ronda DOS TRES) (next-ronda TRES CUATRO)	    
   )
 
   (:goal
