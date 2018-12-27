@@ -7,14 +7,17 @@
   (:types fase-ronda fase-juego contador jugadores materiales)
 
   (:constants
-    INICIO JORNADA ROTA_TURNO FIN - fase-ronda
+    INICIO JORNADA ROTA_TURNO FIN_RONDA - fase-ronda
     RONDAS FIN - fase-juego
-    UNO DOS TRES CUATRO - contador
     J1 J2 - jugadores
-    ADOBE JUNCO MADERA PIEDRA JABALI OVEJA VACA CEREAL HORTALIZA COMIDA - posesiones
-    MADERA ADOBE PIEDRA - materiales
-    ADOBE JUNCO MADERA PIEDRA JABALI OVEJA VACA COMIDA - recursos_acumulables
-    JUNCO CEREAL HORTALIZA COMIDA - recursos_noacumulables
+
+    MADERA ADOBE JABALI CEREAL COMIDA - posesiones
+    MADERA ADOBE - materiales
+    MADERA ADOBE JABALI - recursos_acumulables
+    CEREAL COMIDA - recursos_noacumulables
+
+    COGER_ACUM COGER_NOACUM CONSTRUIR REFORMAR - tipo_accion
+    MADERA ADOBE JABALI COMIDA CEREAL - atributo_accion
   )
 
   (:functions
@@ -36,9 +39,13 @@
     ;; Contadores para las posesiones del jugador
     (recursos ?j - jugadores ?pos - posesiones)
 
+    ;; Ultima ronda en que se utilizo la accion (para saber si esta disponible en la ronda actual)
+    (ultima_ronda-accion ?t - tipo_accion ?at - atributo_accion)
+
   )
 
   (:predicates
+
     ;; Cambio de jugador
     (next-jugador ?j1 ?j2 - jugadores)
 
@@ -128,7 +135,7 @@
         (numero-jugador J1)
         (assign (familiar-actual) 1)
         (not (ronda ROTA_TURNO))
-        (ronda FIN)
+        (ronda FIN_RONDA)
       )
   )
 
@@ -136,12 +143,12 @@
   (:action cambia-ronda
     :precondition
       (and
-        (ronda FIN)
+        (ronda FIN_RONDA)
         (not (= (ronda_actual) 4))
       )
     :effect
       (and
-        (not (ronda FIN))
+        (not (ronda FIN_RONDA))
         (ronda INICIO)
         (increase (ronda_actual) 1)
       )
@@ -165,7 +172,7 @@
   (:action fin-partida
     :precondition
       (and
-        (ronda FIN)
+        (ronda FIN_RONDA)
         (= (ronda_actual) 4)
         (partida RONDAS)
       )
@@ -182,10 +189,13 @@
       (?j - jugadores ?r - recursos_noacumulables)
     :precondition
       (and
+        (< (ultima_ronda-accion COGER_NOACUM ?r) (ronda_actual))
+        (numero-jugador ?j)
         (ronda JORNADA)
       )
     :effect
       (and
+        (assign (ultima_ronda-accion COGER_NOACUM ?r) (ronda_actual))
         (increase (recursos ?j ?r) 1)
         (not (ronda JORNADA))
         (ronda ROTA_TURNO)
@@ -198,10 +208,13 @@
       (?j - jugadores ?r - recursos_acumulables)
     :precondition
       (and
+        (< (ultima_ronda-accion COGER_ACUM ?r) (ronda_actual))
+        (numero-jugador ?j)
         (ronda JORNADA)
       )
     :effect
       (and
+        (assign (ultima_ronda-accion COGER_ACUM ?r) (ronda_actual))
         ;; Asume que hay tantos recursos acumulados como el numero de ronda actual determine
         (increase (recursos ?j ?r) (ronda_actual))
         (not (ronda JORNADA))
@@ -215,27 +228,28 @@
       (?j - jugadores ?m - materiales)
     :precondition
       (and
+        ;; Solo ejecuta accion si esta disponible
+        (< (ultima_ronda-accion CONSTRUIR ?m) (ronda_actual))
 	      (ronda JORNADA)
 	      (numero-jugador ?j)
 	      (> (huecos ?j) 0)
 	      (material_casa ?j ?m)
-	      (>= (recursos ?j JUNCO) 2)
 	      (>= (recursos ?j ?m) 5)
       )
     :effect
       (and
       	;; Acciones
       	(decrease (huecos ?j) 1)
-      	(decrease (recursos ?j JUNCO) 2)
       	(decrease (recursos ?j ?m) 5)
       	(increase (habitaciones ?j) 1)
       	;; Control
+        (assign (ultima_ronda-accion CONSTRUIR ?m) (ronda_actual))
         (not (ronda JORNADA))
         (ronda ROTA_TURNO)
       )
   )
 
-   ;; Construye una habitacion
+   ;; Mejora la casa
   (:action reformar-casa
   	:parameters
       (?j - jugadores ?m1 ?m2 - materiales)
@@ -245,7 +259,6 @@
 	      (numero-jugador ?j)
 	      (material_casa ?j ?m1)
 	      (next-material ?m1 ?m2)
-	      (>= (recursos ?j JUNCO) 1)
 	      (>= (recursos ?j ?m2) (habitaciones ?j))
       )
     :effect
@@ -253,7 +266,6 @@
       	;; Acciones
       	(not (material_casa ?j ?m1))
       	(material_casa ?j ?m2)
-      	(decrease (recursos ?j JUNCO) 1)
       	(decrease (recursos ?j ?m2) (habitaciones ?j))
       	;; Control
         (not (ronda JORNADA))
