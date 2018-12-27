@@ -1,10 +1,10 @@
 (define (problem asdfg) (:domain AGRICOLA)
-  (:objects 
+  (:objects
   	J1 J2 - jugadores
   )
   (:init
     ;; Ronda y mecanismos de iteracion
-      (ronda_actual UNO)
+      (ronda-actual UNO)
       (jugador-actual J1)
       (fase-ronda REPOSICION)
       (fase-partida RONDAS)
@@ -53,6 +53,6 @@
   )
 
   (:goal
-    (partida FIN)
+    (fase-partida FIN)
   )
 )

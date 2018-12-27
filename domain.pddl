@@ -130,7 +130,7 @@
 
   ;; Si la ronda ha terminado y no es la última (existe next-ronda), se cambia de ronda
   (:action cambia-ronda
-  	:parameters 
+  	:parameters
   		(?c1 ?c2 - num-ronda)
     :precondition
       (and
