@@ -11,28 +11,37 @@
     RONDAS FIN - fase-juego
     UNO DOS TRES CUATRO - contador
     J1 J2 - jugadores
+    ADOBE JUNCO MADERA PIEDRA JABALI OVEJA VACA CEREAL HORTALIZA COMIDA - posesiones
     MADERA ADOBE PIEDRA - materiales
+    ADOBE JUNCO MADERA PIEDRA JABALI OVEJA VACA COMIDA - recursos_acumulables
+    JUNCO CEREAL HORTALIZA COMIDA - recursos_noacumulables
   )
 
   (:functions
+    ;; Contador de ronda
+    (ronda_actual)
+
     ;; Familiar a usar el jugador actual
     (familiar-actual)
+
     ;; Total de familiares de cada jugador
     (familiares-jugador ?fj - jugadores)
+
     ;; Numero de huecos restantes
     (huecos ?j - jugadores)
+
     ;; Numero de habitaciones del jugador
     (habitaciones ?j - jugadores)
+
+    ;; Contadores para las posesiones del jugador
+    (recursos ?j - jugadores ?pos - posesiones)
 
   )
 
   (:predicates
-    ;; Cambio de ronda
-  	(next-ronda ?c1 ?c2 - contador)
     ;; Cambio de jugador
     (next-jugador ?j1 ?j2 - jugadores)
-    ;; Ronda actual
-  	(numero-ronda ?n - contador)
+
     ;; Jugador actual
     (numero-jugador ?nj - jugadores)
     ;; Fase de ronda actual
@@ -125,24 +134,21 @@
 
   ;; Si la ronda ha terminado y no es la última (existe next-ronda), se cambia de ronda
   (:action cambia-ronda
-    :parameters
-      (?c1 ?c2 - contador)
     :precondition
       (and
         (ronda FIN)
-        (next-ronda ?c1 ?c2)
-        (numero-ronda ?c1)
+        (not (= (ronda_actual) 4))
       )
     :effect
       (and
         (not (ronda FIN))
         (ronda INICIO)
-        (not (numero-ronda ?c1))
-        (numero-ronda ?c2)
+        (increase (ronda_actual) 1)
       )
   )
 
-  ;; Inicio de ronda
+  ;; Fin de inicio de ronda
+  ;; No es necesario actualizar los recursos acumulables. Su valor se infiere por la ronda
   (:action inicio-ronda
     :precondition
       (and
@@ -160,7 +166,7 @@
     :precondition
       (and
         (ronda FIN)
-        (numero-ronda CUATRO)
+        (= (ronda_actual) 4)
         (partida RONDAS)
       )
     :effect
@@ -170,6 +176,38 @@
       )
   )
 
+  ;; Recoge una unidad de un recurso no acumulable
+  (:action accion_coger-noacumulable
+    :parameters
+      (?j - jugadores ?r - recursos_noacumulables)
+    :precondition
+      (and
+        (ronda JORNADA)
+      )
+    :effect
+      (and
+        (increase (recursos ?j ?r) 1)
+        (not (ronda JORNADA))
+        (ronda ROTA_TURNO)
+      )
+  )
+
+  ;;; Recoge un recurso de la reserva (acumulable; se lleva todo lo que hay)
+  (:action accion_coger-acumulable
+    :parameters
+      (?j - jugadores ?r - recursos_acumulables)
+    :precondition
+      (and
+        (ronda JORNADA)
+      )
+    :effect
+      (and
+        ;; Asume que hay tantos recursos acumulados como el numero de ronda actual determine
+        (increase (recursos ?j ?r) (ronda_actual))
+        (not (ronda JORNADA))
+        (ronda ROTA_TURNO)
+      )
+  )
 
   ;; Construye una habitacion
   (:action contruir-habitacion
@@ -241,5 +279,5 @@
       )
   )
 
-  
+
 )
