@@ -7,9 +7,9 @@
 
   (:init
     ;; Ronda y mecanismos de iteracion
-      (= (ronda_actual) 1)
+      (numero-ronda UNO)
       (numero-jugador J1)
-      (ronda INICIO)
+      (ronda REPOSICION)
       (partida RONDAS)
       (= (familiar-actual) 1)
     ;; Elementos iniciales
@@ -21,6 +21,7 @@
         (material_casa J1 MADERA)
         (material_casa J2 MADERA)
     ;; Constantes del problema
+    (next-ronda UNO DOS) (next-ronda DOS TRES) (next-ronda TRES CUATRO)
     (next-jugador J1 J2)
     (next-material MADERA ADOBE) (next-material ADOBE PIEDRA)
     ;; Jugadores y sus familiares asociados. Inicializa ronda
@@ -43,6 +44,15 @@
     (= (recursos J2 OVEJA) 0)
     (= (recursos J2 VACA) 0)
     (= (recursos J2 COMIDA) 0)
+    ;; Control de recursos acumulados
+    (= (acumulado ADOBE) 0)
+    (= (acumulado JUNCO) 0)
+    (= (acumulado MADERA) 0)
+    (= (acumulado PIEDRA) 0)
+    (= (acumulado JABALI) 0)
+    (= (acumulado OVEJA) 0)
+    (= (acumulado VACA) 0)
+    (= (acumulado COMIDA) 0)
   )
 
   (:goal

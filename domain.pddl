@@ -7,7 +7,7 @@
   (:types fase-ronda fase-juego contador jugadores materiales)
 
   (:constants
-    INICIO JORNADA ROTA_TURNO FIN - fase-ronda
+    REPOSICION INICIO JORNADA ROTA_TURNO FIN COSECHA - fase-ronda
     RONDAS FIN - fase-juego
     UNO DOS TRES CUATRO - contador
     J1 J2 - jugadores
@@ -18,9 +18,6 @@
   )
 
   (:functions
-    ;; Contador de ronda
-    (ronda_actual)
-
     ;; Familiar a usar el jugador actual
     (familiar-actual)
 
@@ -36,12 +33,18 @@
     ;; Contadores para las posesiones del jugador
     (recursos ?j - jugadores ?pos - posesiones)
 
+    ;; Contador asociado a los recursos acumulables
+    (acumulado ?r - recursos_acumulables)
+
   )
 
   (:predicates
+    ;; Cambio de ronda
+  	(next-ronda ?c1 ?c2 - contador)
     ;; Cambio de jugador
     (next-jugador ?j1 ?j2 - jugadores)
-
+    ;; Ronda actual
+  	(numero-ronda ?n - contador)
     ;; Jugador actual
     (numero-jugador ?nj - jugadores)
     ;; Fase de ronda actual
@@ -98,15 +101,15 @@
   )
 
   ;; Representa lo que hace un jugador con su familiar en la jornada laboral
-  (:action jornada-trabaja
-    :precondition
-      (ronda JORNADA)
-    :effect
-      (and
-        (not (ronda JORNADA))
-        (ronda ROTA_TURNO)
-      )
-  )
+  ;;(:action jornada-trabaja
+    ;;:precondition
+      ;;(ronda JORNADA)
+    ;;:effect
+      ;;(and
+        ;;(not (ronda JORNADA))
+        ;;(ronda ROTA_TURNO)
+      ;;)
+  ;;)
 
   ;; Si todos los jugadores han movido todos sus familiares, la ronda termina
   (:action fin-ronda
@@ -134,28 +137,57 @@
 
   ;; Si la ronda ha terminado y no es la última (existe next-ronda), se cambia de ronda
   (:action cambia-ronda
+    :parameters
+      (?c1 ?c2 - contador)
     :precondition
       (and
         (ronda FIN)
-        (not (= (ronda_actual) 4))
+        (next-ronda ?c1 ?c2)
+        (numero-ronda ?c1)
       )
     :effect
       (and
         (not (ronda FIN))
-        (ronda INICIO)
-        (increase (ronda_actual) 1)
+        (ronda REPOSICION)
+        (not (numero-ronda ?c1))
+        (numero-ronda ?c2)
       )
   )
 
-  ;; Fin de inicio de ronda
-  ;; No es necesario actualizar los recursos acumulables. Su valor se infiere por la ronda
-  (:action inicio-ronda
+  ;; Inicio de ronda
+  ;; Actualiza acumulables
+  (:action inicio_ronda-actualiza_acumulable
+    :precondition
+      (and
+        (ronda REPOSICION)
+      )
+    :effect
+      (and
+        ;; Accion
+        (increase (acumulado ADOBE) 1)
+        (increase (acumulado JUNCO) 1)
+        (increase (acumulado MADERA) 3)
+        (increase (acumulado PIEDRA) 1)
+        (increase (acumulado JABALI) 1)
+        (increase (acumulado OVEJA) 1)
+        (increase (acumulado VACA) 1)
+        (increase (acumulado COMIDA) 1)
+        ;; Control
+        (not (ronda REPOSICION))
+        (ronda INICIO)
+      )
+  )
+
+  ;; Fin inicio de ronda
+  ;; Acumulables actualizados
+  (:action inicio_ronda-fin
     :precondition
       (and
         (ronda INICIO)
       )
     :effect
       (and
+        ;; Control
         (not (ronda INICIO))
         (ronda JORNADA)
       )
@@ -166,7 +198,7 @@
     :precondition
       (and
         (ronda FIN)
-        (= (ronda_actual) 4)
+        (numero-ronda CUATRO)
         (partida RONDAS)
       )
     :effect
@@ -199,11 +231,14 @@
     :precondition
       (and
         (ronda JORNADA)
+        (> (acumulado ?r) 0)
       )
     :effect
       (and
-        ;; Asume que hay tantos recursos acumulados como el numero de ronda actual determine
-        (increase (recursos ?j ?r) (ronda_actual))
+        ;; Acciones
+        (increase (recursos ?j ?r) (acumulado ?r))
+        (assign (acumulado ?r) 0)
+        ;; Control
         (not (ronda JORNADA))
         (ronda ROTA_TURNO)
       )
