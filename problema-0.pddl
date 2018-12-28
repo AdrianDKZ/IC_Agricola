@@ -54,9 +54,9 @@
       ;; Campos arados
       	(= (arado J1) 0)
       	(= (arado J2) 0)
-      ;; Pastos vallados
-      	(= (vallado J1) 0)
-      	(= (vallado J2) 0)
+      ;; Maximo numero de animales posible. Depende de los pastos vallados
+      	(= (maximo_animales J1) 0)
+      	(= (maximo_animales J2) 0)
     ;; Constantes del problema
 	    (next-jugador J1 J2)
 	    (next-material MADERA ADOBE) (next-material ADOBE PIEDRA)
