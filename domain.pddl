@@ -7,9 +7,10 @@
   (:types boolean fase-ronda fase-juego num-ronda jugadores posesiones acciones)
 
   (:constants
-    REPOSICION INICIO JORNADA ROTA_TURNO FIN COSECHA - fase-ronda
+    REPOSICION INICIO JORNADA ROTA_TURNO FIN COSECHA CAMBIO_RONDA - fase-ronda
     RONDAS FIN - fase-juego
-    UNO DOS TRES CUATRO - num-ronda
+    RECOLECTAR ALIMENTAR PROCREAR - fase-cosecha
+    CERO UNO DOS TRES CUATRO - num-ronda
     J1 J2 - jugadores
     MADERA ADOBE PIEDRA JUNCO CEREAL HORTALIZA COMIDA OVEJA JABALI VACA - posesiones
     COGER COGER-ACUM REFORMAR CONS-HAB AMPLIAR ARAR VALLAR - acciones
@@ -32,6 +33,10 @@
     (arado ?j - jugadores)
     ;; Numero de pastos vallados
     (vallado ?j - jugadores)
+    ;; Veces que un jugador ha mendigado
+    (mendigo ?j - jugadores)
+    ;; Animales que tiene un jugador (de cualquier tipo)
+    (animales ?j - jugadores)
   )
 
   (:predicates
@@ -55,6 +60,147 @@
     (accion-coger ?a - acciones ?m - posesiones)
     ;; Resto de acciones sin tipo requerido
     (accion ?a - acciones)
+    ;; Control de cosecha. Ultima ronda en la que se ha alimentado a los familiares
+    (cosecha_alimentar ?j - jugadores ?nr - num-ronda)
+    ;; Control de cosecha. Ultima ronda en la que los animales de un jugador se han reproducido
+    (cosecha_procrear ?j - jugadores ?animal - posesiones ?nr - num-ronda)
+    ;; Identifica una posesion que se puede utilizar para alimentar
+    (comestible ?pos - posesiones)
+    ;; Identifica una posesion de tipo animal
+    (animal ?pos - posesiones)
+  )
+
+  ;; Alimenta familiares
+  (:action COSECHA_alimentar
+    :parameters
+      (?j - jugadores ?nr - num-ronda)
+    :precondition
+      (and
+        (ronda-actual ?nr)
+        (fase-ronda COSECHA)
+        ;; No se ha completado la alimentacion en la cosecha actual
+        (not (cosecha_alimentar ?j ?nr))
+        ;; Recursos suficientes para alimentar a todos los familiares
+        (>= (recursos ?j COMIDA) (* (familiares-jugador ?j) 2))
+      )
+    :effect
+      (and
+        (cosecha_alimentar ?j ?nr)
+        (decrease (recursos ?j COMIDA) (* (familiares-jugador ?j) 2))
+      )
+  )
+
+  ;; Convierte un comestible en una unidad de comida
+  (:action COSECHA_convertir-comida
+    :parameters
+      (?j - jugadores ?nr - num-ronda ?pos - posesiones)
+    :precondition
+      (and
+        (ronda-actual ?nr)
+        (fase-ronda COSECHA)
+        ;; No se ha completado la alimentacion en la cosecha actual
+        (not (cosecha_alimentar ?j ?nr))
+        ;; Recursos insuficientes para alimentar a familiares
+        (< (recursos ?j COMIDA) (* (familiares-jugador ?j) 2))
+        ;; Puede convertir algun recurso en comida
+        (> (recursos ?j ?pos) 0)
+        (comestible ?pos)
+      )
+    :effect
+      (and
+        ;; Incrementa la comida del jugador
+        (increase (recursos ?j COMIDA) 1)
+        (decrease (recursos ?j ?pos) 1)
+      )
+  )
+
+  ;; Mendiga comida si no tiene comestibles
+  (:action COSECHA_mendigar-comida
+    :parameters
+      (?j - jugadores ?nr - num-ronda ?pos - posesiones)
+    :precondition
+      (and
+        (ronda-actual ?nr)
+        (fase-ronda COSECHA)
+        ;; No se ha completado la alimentacion en la cosecha actual
+        (not (cosecha_alimentar ?j ?nr))
+        ;; Recursos insuficientes para alimentar a familiares
+        (< (recursos ?j COMIDA) (* (familiares-jugador ?j) 2))
+        ;; No puede convertir ningun recurso en comida
+        (not (> (recursos ?j ?pos) 0))
+        (comestible ?pos)
+      )
+    :effect
+      (and
+        ;; Jugador mendiga tantas unidades de comida como le sean necesarias
+        (increase (recursos ?j COMIDA) (- (* (familiares-jugador ?j) 2) (recursos ?j COMIDA)))
+        (increase (mendigo ?j) (- (* (familiares-jugador ?j) 2) (recursos ?j COMIDA)))
+      )
+  )
+
+  ;; Los animales del jugador se reproducen
+  (:action COSECHA_procrear
+    ::parameters
+      (?j - jugadores ?nr - num-ronda ?a - posesiones)
+    ::precondition
+      (and
+        (animal ?a)
+        ;; El tipo concreto de animal del jugador no ha procreado en la cosecha actual
+        (not (cosecha_procrear ?j ?a ?nr))
+      )
+    ::effect
+      (and
+        ;; Si hay mas de un animal del tipo concreto, se reproducen
+        (when
+          (> (recursos ?j ?a) 1)
+            (and
+              ;; Incrementa contador general de animales
+              (increase (animales ?j) (/ (recursos ?j ?a) 2))
+              ;; Incrementa contador de recursos concretos
+              (increase (recursos ?j ?a) (/ (recursos ?j ?a) 2))
+            )
+        )
+        ;; Si no caben los nuevos animales, se descuentan
+        ;; rawr - de tener hogar nos los podriamos comer!!
+        (when
+          ;; Maximo dos animales por pasto vallado
+          (> (animales ?j) (* (vallado ?j) 2))
+            (and
+              (decrease (recursos ?j ?a) (- (animales ?j) (* (vallado ?j) 2)))
+              (assign (animales ?j) (* (vallado ?j) 2))
+            )
+        )
+        (cosecha_procrear ?j ?a ?nr)
+      )
+  )
+
+  ;; Fin de la cosecha
+  (:action fin-cosecha
+    :parameters
+      (?nr - num-ronda)
+    :precondition
+      (and
+        (ronda-actual ?nr)
+        (fase-ronda COSECHA)
+        ;; Todos los jugadores han recolectado sus sembrados en la cosecha
+        ;; rawr - (forall (?j - jugadores) (cosecha ?j RECOLECTAR ?nr))
+        ;; Todos los jugadores han alimentado a sus familiares en la cosecha
+        (forall (?j - jugadores) (cosecha_alimentar ?j ?nr))
+        ;; Todos los animales de los jugadores han procreado en la cosecha
+        (forall
+          (?j - jugadores)
+            (and
+            (cosecha_procrear ?j JABALI ?nr)
+            (cosecha_procrear ?j OVEJA ?nr)
+            (cosecha_procrear ?j VACA ?nr)
+            )
+        )
+      )
+    :effect
+      (and
+        (not (fase-ronda COSECHA))
+        (fase-ronda CAMBIO_RONDA)
+      )
   )
 
   ;; Cambia el familiar del jugador actual
@@ -133,21 +279,51 @@
   )
 
   ;; Si la ronda ha terminado y no es la última (existe next-ronda), se cambia de ronda
-  (:action cambia-ronda
+  (:action nueva-ronda
   	:parameters
   		(?c1 ?c2 - num-ronda)
     :precondition
       (and
-        (fase-ronda FIN)
+        (fase-ronda CAMBIO_RONDA)
         (next-ronda ?c1 ?c2)
         (ronda-actual ?c1)
+        ;; El cambio de ronda en cosecha es distinto
+        (not (ronda-actual CUATRO))
+      )
+    :effect
+      (and
+        (not (fase-ronda CAMBIO_RONDA))
+        (fase-ronda REPOSICION)
+        (not (ronda-actual ?c1))
+        (ronda-actual ?c2)
+      )
+  )
+
+  ;; Cambio de ronda con COSECHA
+  (:action cambia-ronda_cosecha
+    :precondition
+      (and
+        (fase-ronda FIN)
+        (ronda-actual CUATRO)
       )
     :effect
       (and
         (not (fase-ronda FIN))
-        (fase-ronda REPOSICION)
-        (not (ronda-actual ?c1))
-        (ronda-actual ?c2)
+        (fase-ronda COSECHA)
+      )
+  )
+
+  ;; Pasa a fase de cambio de ronda
+  (:action cambia-ronda
+    :precondition
+      (and
+        (fase-ronda FIN)
+        (not (ronda-actual CUATRO))
+      )
+    :effect
+      (and
+        (not (fase-ronda FIN))
+        (fase-ronda CAMBIO_RONDA)
       )
   )
 
@@ -214,7 +390,7 @@
   		(?c - num-ronda)
     :precondition
       (and
-        (fase-ronda FIN)
+        (fase-ronda CAMBIO_RONDA)
         (ronda-actual CUATRO)
         (fase-partida RONDAS)
       )
@@ -250,6 +426,8 @@
     :precondition
       (and
         (fase-ronda JORNADA)
+        ;; La toma de animales requiere de otras comprobaciones
+        (not (animal ?r))
         (accion-coger COGER-ACUM ?r)
         (> (acumulado ?r) 0)
       )
@@ -258,6 +436,43 @@
         ;; Acciones
         (not (accion-coger COGER-ACUM ?r))
         (increase (recursos ?j ?r) (acumulado ?r))
+        (assign (acumulado ?r) 0)
+        ;; Control
+        (not (fase-ronda JORNADA))
+        (fase-ronda ROTA_TURNO)
+      )
+  )
+
+  ;; Recoge animales de la reserva
+  (:action ACCION_Coger-Acumulable_Animal
+    :parameters
+      (?j - jugadores ?r - posesiones)
+    :precondition
+      (and
+        (fase-ronda JORNADA)
+        (animal ?r)
+        (accion-coger COGER-ACUM ?r)
+        (> (acumulado ?r) 0)
+        ;; El jugador puede alojar al animal
+        (> (* (vallado ?j) 2) (animales ?j))
+      )
+    :effect
+      (and
+        ;; Acciones
+        (not (accion-coger COGER-ACUM ?r))
+        (increase (recursos ?j ?r) (acumulado ?r))
+        (increase (animales ?j) (acumulado ?r))
+        ;; Se prescinden de los animales que no caben
+        (when
+          ;; Mas animales de los que permite tener el vallado
+          (> (animales ?j) (* (vallado ?j) 2))
+            (and
+              ;; Animales sobrantes no se consideran
+              ;; rawr - si se tiene un hogar, se cocinan!!
+              (decrease (recursos ?j ?r) (- (animales ?j) (* (vallado ?j) 2)))
+              (assign (animales ?j) (* (vallado ?j) 2))
+            )
+        )
         (assign (acumulado ?r) 0)
         ;; Control
         (not (fase-ronda JORNADA))
@@ -356,7 +571,7 @@
     :effect
       (and
       	;; Acciones
-      	(decrease (huecos ?j) 1)	
+      	(decrease (huecos ?j) 1)
       	(increase (arado ?j) 1)
       	;; Control
       	(not (accion ARAR))
@@ -381,7 +596,7 @@
     :effect
       (and
       	;; Acciones
-      	(decrease (huecos ?j) 1)	
+      	(decrease (huecos ?j) 1)
       	(increase (vallado ?j) 1)
       	(decrease (recursos ?j MADERA) 4)
       	;; Control
