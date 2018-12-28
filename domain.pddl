@@ -38,9 +38,9 @@
     ;; Animales que tiene un jugador (de cualquier tipo)
     (animales ?j - jugadores)
     ;; Numero de campos sembrados
-    (sembrado ?j - jugadores ?s - semillas)
+    (sembrado ?j - jugadores ?s - posesiones)
     ;; Numero de semillas a recolectar 
-    (cosechable ?j - jugadores ?s - semillas)
+    (cosechable ?j - jugadores ?s - posesiones)
   )
 
   (:predicates
@@ -305,7 +305,7 @@
     :effect
       (and
       	(forall (?a - acciones) (not (accion-realizada ?a)))
-      	(forall (?a - acciones) (not (accion-realizada-complex ?a)))
+      	(forall (?a - acciones ?p - posesiones) (not (accion-realizada-complex ?a ?p)))
         ;; Control
         (not (fase-ronda INICIO))
         (fase-ronda JORNADA)
@@ -575,7 +575,7 @@
       	;; Acciones
       	(decrease (recursos ?j ?s) 1)
       	(decrease (arado ?j) 1)
-      	(increase (sembrados ?j ?s) 1)
+      	(increase (sembrado ?j ?s) 1)
       	(increase (cosechable ?j ?s) 2)
       )
   )
