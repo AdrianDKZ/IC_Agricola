@@ -13,7 +13,8 @@
     CERO UNO DOS TRES CUATRO - num-ronda
     J1 J2 - jugadores
     MADERA ADOBE PIEDRA JUNCO CEREAL HORTALIZA COMIDA OVEJA JABALI VACA - posesiones
-    COGER COGER-ACUM REFORMAR CONS-HAB AMPLIAR ARAR VALLAR - acciones
+    COGER COGER-ACUM REFORMAR CONS-HAB AMPLIAR ARAR VALLAR SEMBRAR- acciones
+    HORTALIZA CEREAL - semillas
   )
 
   (:functions
@@ -37,6 +38,10 @@
     (mendigo ?j - jugadores)
     ;; Animales que tiene un jugador (de cualquier tipo)
     (animales ?j - jugadores)
+    ;; Numero de campos sembrados
+    (sembrado ?j - jugadores ?s - semillas)
+    ;; Numero de semillas a recolectar 
+    (cosechable ?j - jugadores ?s - semillas)
   )
 
   (:predicates
@@ -57,9 +62,7 @@
     ;; Material del que estan hechas las habitaciones
     (material_casa ?j - jugadores ?m - posesiones)
     ;; Acciones de coger recursos
-    (accion-coger ?a - acciones ?m - posesiones)
-    ;; Resto de acciones sin tipo requerido
-    (accion ?a - acciones)
+    (accion-complex ?a - acciones ?m - posesiones)
     ;; Control de cosecha. Determina si se han alimentado a los familiares de un jugador en cosecha
     (cosecha_alimentar ?j - jugadores)
     ;; Identifica una posesion que se puede utilizar para alimentar
@@ -298,24 +301,6 @@
       )
     :effect
       (and
-      	;; Habilitar acciones
-	      	(accion-coger COGER JUNCO)
-		    (accion-coger COGER CEREAL)
-		    (accion-coger COGER HORTALIZA)
-		    (accion-coger COGER COMIDA)
-		    (accion-coger COGER-ACUM ADOBE)
-		    (accion-coger COGER-ACUM JUNCO)
-		    (accion-coger COGER-ACUM MADERA)
-		    (accion-coger COGER-ACUM PIEDRA)
-		    (accion-coger COGER-ACUM JABALI)
-		    (accion-coger COGER-ACUM OVEJA)
-		    (accion-coger COGER-ACUM VACA)
-		    (accion-coger COGER-ACUM COMIDA)
-		    (accion AMPLIAR)
-		    (accion REFORMAR)
-		    (accion CONS-HAB)
-		    (accion ARAR)
-		    (accion VALLAR)
         ;; Control
         (not (fase-ronda INICIO))
         (fase-ronda JORNADA)
@@ -346,12 +331,11 @@
     :precondition
       (and
         (fase-ronda JORNADA)
-        (accion-coger COGER ?r)
+        (accion-complex COGER ?r)
       )
     :effect
       (and
         (increase (recursos ?j ?r) 1)
-        (not (accion-coger COGER ?r))
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)
       )
@@ -366,13 +350,12 @@
         (fase-ronda JORNADA)
         ;; La toma de animales requiere de otras comprobaciones
         (not (animal ?r))
-        (accion-coger COGER-ACUM ?r)
+        (accion-complex COGER-ACUM ?r)
         (> (acumulado ?r) 0)
       )
     :effect
       (and
         ;; Acciones
-        (not (accion-coger COGER-ACUM ?r))
         (increase (recursos ?j ?r) (acumulado ?r))
         (assign (acumulado ?r) 0)
         ;; Control
@@ -389,7 +372,7 @@
       (and
         (fase-ronda JORNADA)
         (animal ?r)
-        (accion-coger COGER-ACUM ?r)
+        (accion-complex COGER-ACUM ?r)
         (> (acumulado ?r) 0)
         ;; El jugador puede alojar al animal
         (> (maximo_animales ?j) (animales ?j))
@@ -397,7 +380,6 @@
     :effect
       (and
         ;; Acciones
-        (not (accion-coger COGER-ACUM ?r))
         (increase (recursos ?j ?r) (acumulado ?r))
         (increase (animales ?j) (acumulado ?r))
         ;; Se prescinden de los animales que no caben
@@ -424,7 +406,6 @@
       (?j - jugadores ?m - posesiones)
     :precondition
       (and
-      	  (accion CONS-HAB)
 	      (fase-ronda JORNADA)
 	      (jugador-actual ?j)
 	      (> (huecos ?j) 0)
@@ -435,7 +416,6 @@
     :effect
       (and
       	;; Acciones
-      	(not (accion CONS-HAB))
       	(decrease (huecos ?j) 1)
       	(decrease (recursos ?j JUNCO) 2)
       	(decrease (recursos ?j ?m) 5)
@@ -452,7 +432,6 @@
       (?j - jugadores ?m1 ?m2 - posesiones)
     :precondition
       (and
-      	  (accion REFORMAR)
 	      (fase-ronda JORNADA)
 	      (jugador-actual ?j)
 	      (material_casa ?j ?m1)
@@ -463,7 +442,6 @@
     :effect
       (and
       	;; Acciones
-      	(not (accion REFORMAR))
       	(not (material_casa ?j ?m1))
       	(material_casa ?j ?m2)
       	(decrease (recursos ?j JUNCO) 1)
@@ -480,7 +458,6 @@
       (?j - jugadores)
     :precondition
       (and
-      	(accion AMPLIAR)
       	(fase-ronda JORNADA)
 	    (jugador-actual ?j)
 	    (< (familiares-jugador ?j) (habitaciones ?j))
@@ -488,7 +465,6 @@
     :effect
       (and
       	(increase (familiares-jugador ?j) 1)
-      	(not (accion AMPLIAR))
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)
       )
@@ -500,7 +476,6 @@
     :precondition
       (and
       	  ;; Control
-      	  (accion ARAR)
 	      (fase-ronda JORNADA)
 	      (jugador-actual ?j)
 	      ;; Acciones
@@ -512,7 +487,6 @@
       	(decrease (huecos ?j) 1)
       	(increase (arado ?j) 1)
       	;; Control
-      	(not (accion ARAR))
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)
       )
@@ -524,7 +498,6 @@
     :precondition
       (and
       	  ;; Control
-      	  (accion VALLAR)
 	      (fase-ronda JORNADA)
 	      (jugador-actual ?j)
 	      ;; Acciones
@@ -539,9 +512,34 @@
       	(increase (maximo_animales ?j) 2)
       	(decrease (recursos ?j MADERA) 4)
       	;; Control
-      	(not (accion VALLAR))
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)
+      )
+  )
+
+  (:action ACCION_Sembrar
+  	:parameters
+      (?j - jugadores ?s - posesiones)
+    :precondition
+      (and
+      	  ;; Control
+	      (fase-ronda JORNADA)
+	      (jugador-actual ?j)
+	      (accion-complex SEMBRAR ?s)
+	      ;; Acciones
+	      (>= (recursos ?j ?s) 1)
+	      (> (arado ?j) 0)
+      )
+    :effect
+      (and
+      	;; Control
+        (not (fase-ronda JORNADA))
+        (fase-ronda ROTA_TURNO)
+      	;; Acciones
+      	(decrease (recursos ?j ?s) 1)
+      	(decrease (arado ?j) 1)
+      	(increase (sembrados ?j ?s) 1)
+      	(increase (cosechable ?j ?s) 2)
       )
   )
 )

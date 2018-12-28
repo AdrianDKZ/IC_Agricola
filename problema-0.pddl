@@ -69,6 +69,22 @@
         (animal JABALI)
         (animal OVEJA)
         (animal VACA)
+      ;; Acciones complejas
+      ;; Habilitar acciones
+        (accion-complex COGER JUNCO)
+        (accion-complex COGER CEREAL)
+        (accion-complex COGER HORTALIZA)
+        (accion-complex COGER COMIDA)
+        (accion-complex COGER-ACUM ADOBE)
+        (accion-complex COGER-ACUM JUNCO)
+        (accion-complex COGER-ACUM MADERA)
+        (accion-complex COGER-ACUM PIEDRA)
+        (accion-complex COGER-ACUM JABALI)
+        (accion-complex COGER-ACUM OVEJA)
+        (accion-complex COGER-ACUM VACA)
+        (accion-complex COGER-ACUM COMIDA)
+        (accion-complex SEMBRAR HORTALIZA)
+        (accion-complex SEMBRAR CEREAL)
   )
 
   (:goal
