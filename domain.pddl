@@ -12,8 +12,9 @@
     RECOLECTAR ALIMENTAR PROCREAR - fase-cosecha
     CERO UNO DOS TRES CUATRO - num-ronda
     J1 J2 - jugadores
+    HORNO COCINA - adquisiciones
     MADERA ADOBE PIEDRA JUNCO CEREAL HORTALIZA COMIDA OVEJA JABALI VACA - posesiones
-    COGER COGER-ACUM REFORMAR CONS-HAB AMPLIAR ARAR VALLAR SEMBRAR - acciones
+    COGER COGER-ACUM REFORMAR CONS-HAB AMPLIAR ARAR VALLAR SEMBRAR COMPRAR-HORNO COMPRAR-COCINA- acciones
   )
 
   (:functions
@@ -39,7 +40,7 @@
     (animales ?j - jugadores)
     ;; Numero de campos sembrados
     (sembrado ?j - jugadores ?s - posesiones)
-    ;; Numero de semillas a recolectar 
+    ;; Numero de semillas a recolectar
     (cosechable ?j - jugadores ?s - posesiones)
   )
 
@@ -68,10 +69,30 @@
     (accion-realizada-complex ?a - acciones ?m - posesiones)
     ;; Control de cosecha. Determina si se han alimentado a los familiares de un jugador en cosecha
     (cosecha_alimentar ?j - jugadores)
+    ;; Control de cosecha. Determina se se han recolectado los sembrados de un jugador
+    (cosecha_recolectar ?j - jugadores)
     ;; Identifica una posesion que se puede utilizar para alimentar
     (comestible ?pos - posesiones)
     ;; Identifica una posesion de tipo animal
     (animal ?pos - posesiones)
+    ;; Asocia una adquisicion a un jugador
+    (adquisicion ?a - adquisiciones ?j - jugadores)
+  )
+
+  ;; Recolectar sembrados
+  (:action COSECHA_recolectar
+    :parameters
+      (?j - jugadores)
+    :precondition
+      (and
+        (fase-ronda COSECHA)
+        (not (cosecha_recolectar ?j))
+      )
+    :effect
+      (and
+        ;; rawr - por implementar
+        (cosecha_recolectar ?j)
+      )
   )
 
   ;; Alimenta familiares
@@ -93,7 +114,7 @@
       )
   )
 
-  ;; Convierte un comestible en una unidad de comida
+  ;; Convierte un comestible en una unidad de comida si tiene una cocina
   (:action COSECHA_convertir-comida
     :parameters
       (?j - jugadores ?pos - posesiones)
@@ -106,12 +127,14 @@
         (< (recursos ?j COMIDA) (* (familiares-jugador ?j) 2))
         ;; Puede convertir algun recurso en comida
         (> (recursos ?j ?pos) 0)
+        ;; Tiene cocina
+        (adquisicion ?j COCINA)
         (comestible ?pos)
       )
     :effect
       (and
         ;; Incrementa la comida del jugador
-        (increase (recursos ?j COMIDA) 1)
+        (increase (recursos ?j COMIDA) 3)
         (decrease (recursos ?j ?pos) 1)
       )
   )
@@ -577,6 +600,56 @@
       	(decrease (arado ?j) 1)
       	(increase (sembrado ?j ?s) 1)
       	(increase (cosechable ?j ?s) 2)
+      )
+  )
+
+  ;; Compra una adquisicion mayor de tipo horno
+  (:action ACCION_Comprar-Horno
+    :parameters
+      (?j - jugadores)
+    :precondition
+      (and
+        (fase-ronda JORNADA)
+        ;; Ningun jugador ha comprado ya el horno
+        (not (exists (?js - jugadores) (adquisicion HORNO ?js)))
+        (>= (recursos ?j ADOBE) 3)
+        (>= (recursos ?j PIEDRA) 1)
+	      (not (accion-realizada COMPRAR-HORNO))
+      )
+    :effect
+      (and
+      	;; Control
+        (not (fase-ronda JORNADA))
+        (fase-ronda ROTA_TURNO)
+        (accion-realizada COMPRAR-HORNO)
+        ;; Acciones
+        (decrease (recursos ?j ADOBE) 3)
+        (decrease (recursos ?j PIEDRA) 1)
+        (adquisicion HORNO ?j)
+      )
+  )
+
+  ;; Compra una adquisicion mayor de tipo cocina
+  (:action ACCION_Comprar-Cocina
+    :parameters
+      (?j - jugadores)
+    :precondition
+      (and
+        (fase-ronda JORNADA)
+        ;; Ningun jugador ha comprado ya la cocina
+        (not (exists (?js - jugadores) (adquisicion COCINA ?js)))
+        (>= (recursos ?j ADOBE) 4)
+	      (not (accion-realizada COMPRAR-COCINA))
+      )
+    :effect
+      (and
+      	;; Control
+        (not (fase-ronda JORNADA))
+        (fase-ronda ROTA_TURNO)
+        (accion-realizada COMPRAR-COCINA)
+        ;; Acciones
+        (decrease (recursos ?j ADOBE) 4)
+        (adquisicion COCINA ?j)
       )
   )
 )
