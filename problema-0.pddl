@@ -72,17 +72,18 @@
 	    (next-material MADERA ADOBE) (next-material ADOBE PIEDRA)
 	    (next-ronda UNO DOS) (next-ronda DOS TRES) (next-ronda TRES CUATRO)
       ;; Recursos que se pueden cocinar para obtener comida
-        (cocinable CEREAL)
         (cocinable HORTALIZA)
         (cocinable OVEJA)
         (cocinable JABALI)
         (cocinable VACA)
       ;; Equivalencia en comida de cada elemento cocinable
-        (= (cocinable CEREAL) 3)
         (= (cocinable HORTALIZA) 3)
         (= (cocinable OVEJA) 2)
         (= (cocinable JABALI) 3)
         (= (cocinable VACA) 4)
+      ;;; Equivalencia de la comida obtenida al hornear con cada adquisicion
+        (= (hornear COCINA) 3)
+        (= (hornear HORNO) 5)
       ;; Recursos animales
         (animal JABALI)
         (animal OVEJA)

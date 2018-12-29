@@ -14,7 +14,7 @@
     J1 J2 - jugadores
     HORNO COCINA - adquisiciones
     MADERA ADOBE PIEDRA JUNCO CEREAL HORTALIZA COMIDA OVEJA JABALI VACA - posesiones
-    COGER COGER-ACUM REFORMAR CONS-HAB AMPLIAR ARAR VALLAR SEMBRAR COMPRAR-HORNO COMPRAR-COCINA - acciones
+    COGER COGER-ACUM REFORMAR CONS-HAB AMPLIAR ARAR VALLAR SEMBRAR COMPRAR-HORNO COMPRAR-COCINA HORNEAR - acciones
   )
 
   (:functions
@@ -44,6 +44,8 @@
     (cosechable ?j - jugadores ?s - posesiones)
     ;; Equivalencia en comidas de cada elemento cocinable
     (cocinable ?c - posesiones)
+    ;; HORNEAR
+    (hornear ?a - adquisiciones)
   )
 
   (:predicates
@@ -249,6 +251,7 @@
     :precondition
       (and
         ;; Comprueba que el jugador tiene otro familiar que puede mover
+        (jugador-actual ?j)
         (< (familiar-actual) (familiares-jugador ?j))
         (fase-ronda ROTA_TURNO)
       )
@@ -424,6 +427,7 @@
     :precondition
       (and
       	;; Control
+        (jugador-actual ?j)
         (fase-ronda JORNADA)
         (accion-complex COGER ?r)
         (not (accion-realizada-complex COGER ?r))
@@ -446,6 +450,7 @@
     :precondition
       (and
       	;; Control
+        (jugador-actual ?j)
         (fase-ronda JORNADA)
         (accion-complex COGER-ACUM ?r)
         (not (accion-realizada-complex COGER-ACUM ?r))
@@ -472,6 +477,7 @@
     :precondition
       (and
       	;; Control
+        (jugador-actual ?j)
       	(accion-complex COGER-ACUM ?r)
         (fase-ronda JORNADA)
         (not (accion-realizada-complex COGER-ACUM ?r))
@@ -674,6 +680,7 @@
       (?j - jugadores)
     :precondition
       (and
+        (jugador-actual ?j)
         (fase-ronda JORNADA)
         ;; Ningun jugador ha comprado ya el horno
         (not (exists (?js - jugadores) (adquisicion HORNO ?js)))
@@ -700,6 +707,7 @@
       (?j - jugadores)
     :precondition
       (and
+        (jugador-actual ?j)
         (fase-ronda JORNADA)
         ;; Ningun jugador ha comprado ya la cocina
         (not (exists (?js - jugadores) (adquisicion COCINA ?js)))
@@ -716,5 +724,31 @@
         (decrease (recursos ?j ADOBE) 4)
         (adquisicion COCINA ?j)
       )
+  )
+
+  (:action ACCION_Hornear
+    :parameters 
+      (?j - jugadores ?a - adquisiciones)
+    :precondition
+      (and
+        ;; Control
+        (jugador-actual ?j)
+        (fase-ronda JORNADA)
+        (not (accion-realizada HORNEAR))
+        ;; Accion
+        (adquisicion ?a ?j)
+        (>= (recursos ?j CEREAL) 1)
+      )
+    :effect
+      (and
+        ;;Control
+        (not (fase-ronda JORNADA))
+        (fase-ronda ROTA_TURNO)
+        (accion-realizada HORNEAR)
+        ;;Accion
+        (decrease (recursos ?j CEREAL) 1)
+        (increase (recursos ?j COMIDA) (hornear ?a))
+      )
+
   )
 )
