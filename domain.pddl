@@ -4,7 +4,7 @@
   ;; "equality" para poder hacer comparaciones de igualdad con =
   (:requirements :strips :typing :fluents :equality)
 
-  (:types boolean fase-ronda fase-juego num-ronda jugadores posesiones acciones)
+  (:types fase-ronda fase-juego num-ronda jugadores posesiones acciones)
 
   (:constants
     REPOSICION INICIO JORNADA ROTA_TURNO FIN COSECHA CAMBIO_RONDA - fase-ronda
@@ -12,14 +12,13 @@
     RECOLECCION ALIMENTACION - fase-cosecha
     CERO UNO DOS TRES CUATRO - num-ronda
     J1 J2 - jugadores
+    F1 F2 F3 -familiares
     HORNO COCINA - adquisiciones
     MADERA ADOBE PIEDRA JUNCO CEREAL HORTALIZA COMIDA OVEJA JABALI VACA - posesiones
     COGER COGER-ACUM REFORMAR CONS-HAB AMPLIAR ARAR VALLAR SEMBRAR COMPRAR-HORNO COMPRAR-COCINA HORNEAR - acciones
   )
 
   (:functions
-    ;; Familiar a usar el jugador actual
-    (familiar-actual)
     ;; Total de familiares de cada jugador
     (familiares-jugador ?fj - jugadores)
     ;; Numero de huecos restantes
@@ -83,6 +82,13 @@
     (animal ?pos - posesiones)
     ;; Asocia una adquisicion a un jugador
     (adquisicion ?a - adquisiciones ?j - jugadores)
+
+    ;; Familiar considerado en el turno actual
+    (familiar_actual ?f - familiares)
+    ;; Mayor indice de familiar que tiene un jugador
+    (familiar_max-jugador ?j - jugadores ?f - familiares)
+    ;; Iteracion de familiares
+    (next-familiar ?f1 ?f2 - familiares)
   )
 
 
@@ -247,18 +253,25 @@
   ;; Cambia el familiar del jugador actual
   (:action cambia-turno-familiar
     :parameters
-      (?j - jugadores)
+      (?j - jugadores ?fa ?fn - familiares)
     :precondition
       (and
         ;; Comprueba que el jugador tiene otro familiar que puede mover
         (jugador-actual ?j)
-        (< (familiar-actual) (familiares-jugador ?j))
+
+        ;; Si familiar actual y maximo del jugador no coinciden, entonces se debe cambiar turno de familiar
+        (familiar_actual ?fa)
+        (not (familiar_max-jugador ?j ?fa))
+        (next-familiar ?fa ?fn)
+
         (fase-ronda ROTA_TURNO)
       )
     :effect
       (and
         ;; Cambia de familiar
-        (increase (familiar-actual) 1)
+        (not (familiar_actual ?fa))
+        (familiar_actual ?fn)
+
         (not (fase-ronda ROTA_TURNO))
         (fase-ronda JORNADA)
       )
@@ -267,12 +280,16 @@
   ;; Cambia de jugador cuando se han movido todos los del actual
   (:action cambia-turno-jugador
     :parameters
-      (?j1 ?j2 - jugadores)
+      (?j1 ?j2 - jugadores ?fa - familiares)
     :precondition
       (and
         (next-jugador ?j1 ?j2)
         (jugador-actual ?j1)
-        (= (familiar-actual) (familiares-jugador ?j1))
+
+        ;; Si familiar actual y maximo del jugador coinciden, entonces se debe cambiar turno de jugador
+        (familiar_actual ?fa)
+        (familiar_max-jugador ?j1 ?fa)
+
         ;; Comprueba que no trata de rotar al ultimo jugador
         (not (jugador-actual J2))
         (fase-ronda ROTA_TURNO)
@@ -282,7 +299,10 @@
         ;; Cambia el turno del jugador y resetea el familiar iterado al primero
         (not (jugador-actual ?j1))
         (jugador-actual ?j2)
-        (assign (familiar-actual) 1)
+
+        (not (familiar_actual ?fa))
+        (familiar_actual F1)
+
         (not (fase-ronda ROTA_TURNO))
         (fase-ronda JORNADA)
       )
@@ -290,20 +310,28 @@
 
   ;; Si todos los jugadores han movido todos sus familiares, la ronda termina
   (:action fin-ronda
+    :parameters
+      (?fa - familiares)
     :precondition
       (and
         ;; Comprueba que es el ultimo jugador
         (jugador-actual J2)
+
         ;; Comprueba que se han movido todos los familiares del ultimo jugador
-        (= (familiar-actual) (familiares-jugador J2))
+        (familiar_actual ?fa)
+        (familiar_max-jugador J2 ?fa)
+
         (fase-ronda ROTA_TURNO)
       )
     :effect
       (and
-        ;; Resetea el jugador y el familiar y cambia la ronda
+        ;; Resetea el jugador y el familiar y finaliza la ronda
         (not (jugador-actual J2))
         (jugador-actual J1)
-        (assign (familiar-actual) 1)
+
+        (not (familiar_actual ?fa))
+        (familiar_actual F1)
+
         (not (fase-ronda ROTA_TURNO))
         (fase-ronda FIN)
       )
@@ -574,7 +602,7 @@
   ;; Ampliar familia con habtaciones para todos los miembros
   (:action ACCION_Ampliar-Familia
   	:parameters
-      (?j - jugadores)
+      (?j - jugadores ?fj ?fn - familiares)
     :precondition
       (and
       	;; Control
@@ -582,12 +610,16 @@
       	(not (accion-realizada AMPLIAR))
       	;; Accion
 	    (jugador-actual ?j)
+      (familiar_max-jugador ?j ?fj)
+      (next-familiar ?fj ?fn)
 	    (< (familiares-jugador ?j) (habitaciones ?j))
 	  )
     :effect
       (and
       	;; Accion
       	(increase (familiares-jugador ?j) 1)
+        (not (familiar_max-jugador ?j ?fj))
+        (familiar_max-jugador ?j ?fn)
       	;; Control
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)

@@ -5,9 +5,11 @@
     ;; Ronda y mecanismos de iteracion
       (ronda-actual UNO)
       (jugador-actual J1)
+      (familiar_actual F1)
+      (familiar_max-jugador J1 F2)
+      (familiar_max-jugador J2 F2)
       (fase-ronda REPOSICION)
       (fase-partida RONDAS)
-      (= (familiar-actual) 1)
     ;; Elementos iniciales
       (= (huecos J1) 13)
       (= (huecos J2) 13)
@@ -71,6 +73,7 @@
 	    (next-jugador J1 J2)
 	    (next-material MADERA ADOBE) (next-material ADOBE PIEDRA)
 	    (next-ronda UNO DOS) (next-ronda DOS TRES) (next-ronda TRES CUATRO)
+      (next-familiar F1 F2) (next-familiar F2 F3)
       ;; Recursos que se pueden cocinar para obtener comida
         (cocinable HORTALIZA)
         (cocinable OVEJA)
