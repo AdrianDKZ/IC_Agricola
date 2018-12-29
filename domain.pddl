@@ -45,6 +45,8 @@
     (cocinable ?c - posesiones)
     ;; HORNEAR
     (hornear ?a - adquisiciones)
+    ;; Familiares maximos que se pueden tener
+    (familiares-max)
   )
 
   (:predicates
@@ -554,6 +556,8 @@
 	      (material_casa ?j ?m)
 	      (>= (recursos ?j JUNCO) 2)
 	      (>= (recursos ?j ?m) 5)
+        ;; No se construyen mas habitaciones que familiares totales se puede tener
+        (< (habitaciones ?j) (familiares-max))
       )
     :effect
       (and

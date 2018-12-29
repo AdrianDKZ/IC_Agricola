@@ -53,6 +53,7 @@
   	  ;; Familiares
       	(= (familiares-jugador J1) 2)
       	(= (familiares-jugador J2) 2)
+        (= (familiares-max) 3)
       ;; Campos arados
       	(= (arado J1) 0)
       	(= (arado J2) 0)
