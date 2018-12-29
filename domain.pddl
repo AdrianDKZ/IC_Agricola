@@ -86,7 +86,6 @@
   )
 
 
-
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; COSECHA ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -184,6 +183,7 @@
         ;; Incrementa la comida del jugador tantas unidades como el recurso original pueda
         (increase (recursos ?j COMIDA) (cocinable ?pos))
         (decrease (recursos ?j ?pos) 1)
+        (when (animal ?pos) (decrease (animales ?j) 1))
       )
   )
 
@@ -417,7 +417,7 @@
   )
 
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ACCIONES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ACCIONES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ;; Recoge una unidad de un recurso no acumulable
@@ -517,8 +517,8 @@
       (?j - jugadores ?m - posesiones)
     :precondition
       (and
-      	  ;; Contol
-      	  (not (accion-realizada CONS-HAB))
+      	;; Contol
+      	(not (accion-realizada CONS-HAB))
 	      (fase-ronda JORNADA)
 	      ;; Accion
 	      (jugador-actual ?j)
@@ -727,7 +727,7 @@
   )
 
   (:action ACCION_Hornear
-    :parameters 
+    :parameters
       (?j - jugadores ?a - adquisiciones)
     :precondition
       (and
