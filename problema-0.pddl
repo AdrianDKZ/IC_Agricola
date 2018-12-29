@@ -71,10 +71,18 @@
 	    (next-jugador J1 J2)
 	    (next-material MADERA ADOBE) (next-material ADOBE PIEDRA)
 	    (next-ronda UNO DOS) (next-ronda DOS TRES) (next-ronda TRES CUATRO)
-      ;; Recursos comestibles
-        (comestible COMIDA)
-        (comestible CEREAL)
-        (comestible HORTALIZA)
+      ;; Recursos que se pueden cocinar para obtener comida
+        (cocinable CEREAL)
+        (cocinable HORTALIZA)
+        (cocinable OVEJA)
+        (cocinable JABALI)
+        (cocinable VACA)
+      ;; Equivalencia en comida de cada elemento cocinable
+        (= (cocinable CEREAL) 3)
+        (= (cocinable HORTALIZA) 3)
+        (= (cocinable OVEJA) 2)
+        (= (cocinable JABALI) 3)
+        (= (cocinable VACA) 4)
       ;; Recursos animales
         (animal JABALI)
         (animal OVEJA)

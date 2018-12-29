@@ -9,12 +9,12 @@
   (:constants
     REPOSICION INICIO JORNADA ROTA_TURNO FIN COSECHA CAMBIO_RONDA - fase-ronda
     RONDAS FIN - fase-juego
-    RECOLECTAR ALIMENTAR PROCREAR - fase-cosecha
+    RECOLECCION ALIMENTACION - fase-cosecha
     CERO UNO DOS TRES CUATRO - num-ronda
     J1 J2 - jugadores
     HORNO COCINA - adquisiciones
     MADERA ADOBE PIEDRA JUNCO CEREAL HORTALIZA COMIDA OVEJA JABALI VACA - posesiones
-    COGER COGER-ACUM REFORMAR CONS-HAB AMPLIAR ARAR VALLAR SEMBRAR COMPRAR-HORNO COMPRAR-COCINA- acciones
+    COGER COGER-ACUM REFORMAR CONS-HAB AMPLIAR ARAR VALLAR SEMBRAR COMPRAR-HORNO COMPRAR-COCINA - acciones
   )
 
   (:functions
@@ -42,6 +42,8 @@
     (sembrado ?j - jugadores ?s - posesiones)
     ;; Numero de semillas a recolectar
     (cosechable ?j - jugadores ?s - posesiones)
+    ;; Equivalencia en comidas de cada elemento cocinable
+    (cocinable ?c - posesiones)
   )
 
   (:predicates
@@ -67,32 +69,76 @@
     (accion-realizada ?a - acciones)
     ;; Control de que las acciones complejas solo se hagan una vez
     (accion-realizada-complex ?a - acciones ?m - posesiones)
-    ;; Control de cosecha. Determina si se han alimentado a los familiares de un jugador en cosecha
-    (cosecha_alimentar ?j - jugadores)
-    ;; Control de cosecha. Determina se se han recolectado los sembrados de un jugador
-    (cosecha_recolectar ?j - jugadores)
-    ;; Identifica una posesion que se puede utilizar para alimentar
-    (comestible ?pos - posesiones)
+    ;; Control de cosecha. Determina una fase de la cosecha que se ha completado
+    (cosecha ?fc - fase-cosecha ?j - jugadores)
+    ;; Determina si se ha recolectado un tipo de sembrado concreto de un jugador
+    (cosecha_recolectar-sembrado ?j - jugadores ?s - posesiones)
+    ;; Determina si se han reproducido los animales de un tipo concreto
+    (cosecha_reproducir-animales ?j - jugadores ?a - posesiones)
+    ;; Identifica una posesion que se puede cocinar para obtener comida
+    (cocinable ?pos - posesiones)
     ;; Identifica una posesion de tipo animal
     (animal ?pos - posesiones)
     ;; Asocia una adquisicion a un jugador
     (adquisicion ?a - adquisiciones ?j - jugadores)
   )
 
+
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; COSECHA ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   ;; Recolectar sembrados
+  (:action COSECHA_recolectar-sembrado
+    :parameters
+      (?j - jugadores ?s - posesiones)
+    :precondition
+      (and
+        (fase-ronda COSECHA)
+        (accion-complex SEMBRAR ?s)
+        ;; No se ha recolectado aun el sembrado
+        (not (cosecha_recolectar-sembrado ?j ?s))
+      )
+    :effect
+      (and
+        (decrease (cosechable ?j ?s) 1)
+        (increase (recursos ?j ?s) 1)
+        (cosecha_recolectar-sembrado ?j ?s)
+
+        ;; Sembrado vacio vuelve a ser arado
+        ;; rawr - Asume que no hay mas de un sembrado del mismo tipo!
+        ;; rawr - (cosechable no referencia a un sembrado concreto, sino a los recursos)
+        (when (= (cosechable ?j ?s) 0)
+          (and
+            (decrease (sembrado ?j ?s) 1)
+            (increase (arado ?j) 1)
+          )
+        )
+      )
+  )
+
+  ;; Comprueba que todos los sembrados de un jugador han sido recolectados
   (:action COSECHA_recolectar
     :parameters
       (?j - jugadores)
     :precondition
       (and
         (fase-ronda COSECHA)
-        (not (cosecha_recolectar ?j))
+        ;; El jugador aun no ha completado la recoleccion
+        (not (cosecha RECOLECCION ?j))
+        ;; No existe sembrado por cosechar
+        (not
+          (exists (?s - posesiones)
+            (and
+              (accion-complex SEMBRAR ?s)
+              (> (cosechable ?j ?s) 0)
+              (not (cosecha_recolectar-sembrado ?j ?s))
+            )
+          )
+        )
       )
     :effect
-      (and
-        ;; rawr - por implementar
-        (cosecha_recolectar ?j)
-      )
+      (cosecha RECOLECCION ?j)
   )
 
   ;; Alimenta familiares
@@ -103,18 +149,18 @@
       (and
         (fase-ronda COSECHA)
         ;; No se ha completado la alimentacion en la cosecha actual
-        (not (cosecha_alimentar ?j))
+        (not (cosecha ALIMENTACION ?j))
         ;; Recursos suficientes para alimentar a todos los familiares
         (>= (recursos ?j COMIDA) (* (familiares-jugador ?j) 2))
       )
     :effect
       (and
-        (cosecha_alimentar ?j)
         (decrease (recursos ?j COMIDA) (* (familiares-jugador ?j) 2))
+        (cosecha ALIMENTACION ?j)
       )
   )
 
-  ;; Convierte un comestible en una unidad de comida si tiene una cocina
+  ;; Convierte un cocinable en una unidad de comida si tiene una cocina y necesita comida
   (:action COSECHA_convertir-comida
     :parameters
       (?j - jugadores ?pos - posesiones)
@@ -122,37 +168,46 @@
       (and
         (fase-ronda COSECHA)
         ;; No se ha completado la alimentacion en la cosecha actual
-        (not (cosecha_alimentar ?j))
+        (not (cosecha ALIMENTACION ?j))
         ;; Recursos insuficientes para alimentar a familiares
         (< (recursos ?j COMIDA) (* (familiares-jugador ?j) 2))
         ;; Puede convertir algun recurso en comida
         (> (recursos ?j ?pos) 0)
         ;; Tiene cocina
-        (adquisicion ?j COCINA)
-        (comestible ?pos)
+        (adquisicion COCINA ?j)
+        (cocinable ?pos)
       )
     :effect
       (and
-        ;; Incrementa la comida del jugador
-        (increase (recursos ?j COMIDA) 3)
+        ;; Incrementa la comida del jugador tantas unidades como el recurso original pueda
+        (increase (recursos ?j COMIDA) (cocinable ?pos))
         (decrease (recursos ?j ?pos) 1)
       )
   )
 
-  ;; Mendiga comida si no tiene comestibles
+  ;; Mendiga comida si necesita comida y no tiene cocinables
   (:action COSECHA_mendigar-comida
     :parameters
-      (?j - jugadores ?pos - posesiones)
+      (?j - jugadores)
     :precondition
       (and
         (fase-ronda COSECHA)
         ;; No se ha completado la alimentacion en la cosecha actual
-        (not (cosecha_alimentar ?j))
+        (not (cosecha ALIMENTACION ?j))
         ;; Recursos insuficientes para alimentar a familiares
         (< (recursos ?j COMIDA) (* (familiares-jugador ?j) 2))
-        ;; No puede convertir ningun recurso en comida
-        (not (> (recursos ?j ?pos) 0))
-        (comestible ?pos)
+        ;; No puede convertir ningun recurso en comida (no tiene cocina o no tiene cocinables)
+        (or
+          (not (adquisicion COCINA ?j))
+          (not
+            (exists (?pos - posesiones)
+              (and
+                (cocinable ?pos)
+                (> (recursos ?j ?pos) 0)
+              )
+            )
+          )
+        )
       )
     :effect
       (and
@@ -167,19 +222,25 @@
     :precondition
       (and
         (fase-ronda COSECHA)
-        ;; Todos los jugadores han recolectado sus sembrados en la cosecha
-        ;; rawr - (forall (?j - jugadores) (cosecha ?j RECOLECTAR ?nr))
-        ;; Todos los jugadores han alimentado a sus familiares en la cosecha
-        (forall (?j - jugadores) (cosecha_alimentar ?j))
+        ;; Todos los jugadores han completado todas las fases de cosecha
+        (not
+          (exists (?j - jugadores ?fc - fase-cosecha)
+            (not (cosecha ?fc ?j))
+          )
+        )
       )
     :effect
       (and
         (not (fase-ronda COSECHA))
         (fase-ronda CAMBIO_RONDA)
         ;; Elimina predicados auxiliares al final de la cosecha
-        (forall (?j - jugadores) (not (cosecha_alimentar ?j)))
+        (forall (?j - jugadores ?fc - fase-cosecha) (not (cosecha ?fc ?j)))
       )
   )
+
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;; CONTROL DE RONDA ;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ;; Cambia el familiar del jugador actual
   (:action cambia-turno-familiar
@@ -351,6 +412,10 @@
         (fase-partida FIN)
       )
   )
+
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ACCIONES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ;; Recoge una unidad de un recurso no acumulable
   (:action ACCION_Coger-Recurso
