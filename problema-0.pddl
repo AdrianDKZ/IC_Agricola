@@ -5,9 +5,10 @@
     ;; Ronda y mecanismos de iteracion
       (ronda-actual UNO)
       (jugador-actual J1)
-      (familiar_actual F1)
-      (familiar_max-jugador J1 F2)
-      (familiar_max-jugador J2 F2)
+      (familiar_actual UNO)
+      (familiar_max TRES)
+      (familiar_max-jugador J1 DOS)
+      (familiar_max-jugador J2 DOS)
       (fase-ronda REPOSICION)
       (fase-partida RONDAS)
     ;; Elementos iniciales
@@ -73,8 +74,7 @@
     ;; Constantes del problema
 	    (next-jugador J1 J2)
 	    (next-material MADERA ADOBE) (next-material ADOBE PIEDRA)
-	    (next-ronda UNO DOS) (next-ronda DOS TRES) (next-ronda TRES CUATRO)
-      (next-familiar F1 F2) (next-familiar F2 F3)
+      (next-numero UNO DOS) (next-numero DOS TRES) (next-numero TRES CUATRO)
       ;; Recursos que se pueden cocinar para obtener comida
         (cocinable HORTALIZA)
         (cocinable OVEJA)

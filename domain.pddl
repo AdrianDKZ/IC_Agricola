@@ -4,15 +4,14 @@
   ;; "equality" para poder hacer comparaciones de igualdad con =
   (:requirements :strips :typing :fluents :equality)
 
-  (:types fase-ronda fase-juego num-ronda jugadores posesiones acciones)
+  (:types fase-ronda fase-juego numeros jugadores posesiones acciones)
 
   (:constants
     REPOSICION INICIO JORNADA ROTA_TURNO FIN COSECHA CAMBIO_RONDA - fase-ronda
     RONDAS FIN - fase-juego
     RECOLECCION ALIMENTACION - fase-cosecha
-    CERO UNO DOS TRES CUATRO - num-ronda
+    CERO UNO DOS TRES CUATRO - numeros
     J1 J2 - jugadores
-    F1 F2 F3 -familiares
     HORNO COCINA - adquisiciones
     MADERA ADOBE PIEDRA JUNCO CEREAL HORTALIZA COMIDA OVEJA JABALI VACA - posesiones
     COGER COGER-ACUM REFORMAR CONS-HAB AMPLIAR ARAR VALLAR SEMBRAR COMPRAR-HORNO COMPRAR-COCINA HORNEAR - acciones
@@ -51,7 +50,7 @@
 
   (:predicates
   	;; Ronda actual
-  	(ronda-actual ?r - num-ronda)
+  	(ronda-actual ?r - numeros)
     ;; Jugador actual
     (jugador-actual ?nj - jugadores)
     ;; Fase de ronda actual
@@ -60,8 +59,8 @@
     (fase-partida ?p - fase-juego)
     ;; Cambio de jugador
     (next-jugador ?j1 ?j2 - jugadores)
-    ;; Cambio de ronda
-    (next-ronda ?r1 ?r2 - num-ronda)
+    ;; Iteracion de numeros
+    (next-numero ?n1 ?n2 - numeros)
     ;; Cambio de material de las habitaciones
     (next-material ?m1 ?m2 - posesiones)
     ;; Material del que estan hechas las habitaciones
@@ -76,8 +75,6 @@
     (cosecha ?fc - fase-cosecha ?j - jugadores)
     ;; Determina si se ha recolectado un tipo de sembrado concreto de un jugador
     (cosecha_recolectar-sembrado ?j - jugadores ?s - posesiones)
-    ;; Determina si se han reproducido los animales de un tipo concreto
-    (cosecha_reproducir-animales ?j - jugadores ?a - posesiones)
     ;; Identifica una posesion que se puede cocinar para obtener comida
     (cocinable ?pos - posesiones)
     ;; Identifica una posesion de tipo animal
@@ -86,11 +83,11 @@
     (adquisicion ?a - adquisiciones ?j - jugadores)
 
     ;; Familiar considerado en el turno actual
-    (familiar_actual ?f - familiares)
+    (familiar_actual ?f - numeros)
     ;; Mayor indice de familiar que tiene un jugador
-    (familiar_max-jugador ?j - jugadores ?f - familiares)
-    ;; Iteracion de familiares
-    (next-familiar ?f1 ?f2 - familiares)
+    (familiar_max-jugador ?j - jugadores ?f - numeros)
+    ;; Maximos familiares
+    (familiar_max ?fm - numeros)
   )
 
 
@@ -255,7 +252,7 @@
   ;; Cambia el familiar del jugador actual
   (:action cambia-turno-familiar
     :parameters
-      (?j - jugadores ?fa ?fn - familiares)
+      (?j - jugadores ?fa ?fn - numeros)
     :precondition
       (and
         ;; Comprueba que el jugador tiene otro familiar que puede mover
@@ -264,7 +261,8 @@
         ;; Si familiar actual y maximo del jugador no coinciden, entonces se debe cambiar turno de familiar
         (familiar_actual ?fa)
         (not (familiar_max-jugador ?j ?fa))
-        (next-familiar ?fa ?fn)
+
+        (next-numero ?fa ?fn)
 
         (fase-ronda ROTA_TURNO)
       )
@@ -282,7 +280,7 @@
   ;; Cambia de jugador cuando se han movido todos los del actual
   (:action cambia-turno-jugador
     :parameters
-      (?j1 ?j2 - jugadores ?fa - familiares)
+      (?j1 ?j2 - jugadores ?fa - numeros)
     :precondition
       (and
         (next-jugador ?j1 ?j2)
@@ -303,7 +301,7 @@
         (jugador-actual ?j2)
 
         (not (familiar_actual ?fa))
-        (familiar_actual F1)
+        (familiar_actual UNO)
 
         (not (fase-ronda ROTA_TURNO))
         (fase-ronda JORNADA)
@@ -313,7 +311,7 @@
   ;; Si todos los jugadores han movido todos sus familiares, la ronda termina
   (:action fin-ronda
     :parameters
-      (?fa - familiares)
+      (?fa - numeros)
     :precondition
       (and
         ;; Comprueba que es el ultimo jugador
@@ -332,22 +330,22 @@
         (jugador-actual J1)
 
         (not (familiar_actual ?fa))
-        (familiar_actual F1)
+        (familiar_actual UNO)
 
         (not (fase-ronda ROTA_TURNO))
         (fase-ronda FIN)
       )
   )
 
-  ;; Si la ronda ha terminado y no es la última (existe next-ronda), se cambia de ronda
+  ;; Si la ronda ha terminado y no es la última (existe next-numero), se cambia de ronda
   (:action nueva-ronda
   	:parameters
-  		(?c1 ?c2 - num-ronda)
+  		(?r1 ?r2 - numeros)
     :precondition
       (and
         (fase-ronda CAMBIO_RONDA)
-        (next-ronda ?c1 ?c2)
-        (ronda-actual ?c1)
+        (next-numero ?r1 ?r2)
+        (ronda-actual ?r1)
         ;; El cambio de ronda en cosecha es distinto
         (not (ronda-actual CUATRO))
       )
@@ -355,8 +353,8 @@
       (and
         (not (fase-ronda CAMBIO_RONDA))
         (fase-ronda REPOSICION)
-        (not (ronda-actual ?c1))
-        (ronda-actual ?c2)
+        (not (ronda-actual ?r1))
+        (ronda-actual ?r2)
       )
   )
 
@@ -432,7 +430,7 @@
   ;; Si se han jugado todas las rondas (numero-ronda -> ULTIMA), la partida termina
   (:action fin-partida
   	:parameters
-  		(?c - num-ronda)
+  		(?c - numeros)
     :precondition
       (and
         (fase-ronda CAMBIO_RONDA)
@@ -606,7 +604,7 @@
   ;; Ampliar familia con habtaciones para todos los miembros
   (:action ACCION_Ampliar-Familia
   	:parameters
-      (?j - jugadores ?fj ?fn - familiares)
+      (?j - jugadores ?fj ?fn - numeros)
     :precondition
       (and
       	;; Control
@@ -615,7 +613,9 @@
       	;; Accion
 	    (jugador-actual ?j)
       (familiar_max-jugador ?j ?fj)
-      (next-familiar ?fj ?fn)
+      ;; No se ha alcanzado el limite de familiares
+      (not (familiar_max ?fj))
+      (next-numero ?fj ?fn)
 	    (< (familiares-jugador ?j) (habitaciones ?j))
 	  )
     :effect
