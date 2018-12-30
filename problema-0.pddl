@@ -58,16 +58,9 @@
       ;; Campos arados
       	(= (arado J1) 0)
       	(= (arado J2) 0)
-      ;; Campos sembrados
-      	(= (sembrado J1 CEREAL) 0)
-      	(= (sembrado J1 HORTALIZA) 0)
-      	(= (sembrado J2 CEREAL) 0)
-      	(= (sembrado J2 HORTALIZA) 0)
-      ;; Recursos a recoger
-      	(= (cosechable J1 CEREAL) 0)
-      	(= (cosechable J1 HORTALIZA) 0)
-      	(= (cosechable J2 CEREAL) 0)
-      	(= (cosechable J2 HORTALIZA) 0)
+      ;; Recursos que se obtienen al sembrar una semilla de un tipo
+        (= (sembrable HORTALIZA) 2)
+        (= (sembrable CEREAL) 3)
       ;; Maximo numero de animales posible. Depende de los pastos vallados
       	(= (maximo_animales J1) 0)
       	(= (maximo_animales J2) 0)

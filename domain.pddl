@@ -36,16 +36,16 @@
     (mendigo ?j - jugadores)
     ;; Animales que tiene un jugador (de cualquier tipo)
     (animales ?j - jugadores)
-    ;; Numero de campos sembrados
-    (sembrado ?j - jugadores ?s - posesiones)
-    ;; Numero de semillas a recolectar
-    (cosechable ?j - jugadores ?s - posesiones)
     ;; Equivalencia en comidas de cada elemento cocinable
     (cocinable ?c - posesiones)
     ;; HORNEAR
     (hornear ?a - adquisiciones)
     ;; Familiares maximos que se pueden tener
     (familiares-max)
+    ;; Asocia un sembrado con un jugador. Contabiliza recursos disponibles. El numero de ronda se utiliza como id
+    (sembrado ?j - jugadores ?s - posesiones ?id - numeros)
+    ;; Determina el numero de recursos que se obtienen al sembrar un tipo de semilla
+    (sembrable ?s - posesiones)
   )
 
   (:predicates
@@ -73,78 +73,85 @@
     (accion-realizada-complex ?a - acciones ?m - posesiones)
     ;; Control de cosecha. Determina una fase de la cosecha que se ha completado
     (cosecha ?fc - fase-cosecha ?j - jugadores)
-    ;; Determina si se ha recolectado un tipo de sembrado concreto de un jugador
-    (cosecha_recolectar-sembrado ?j - jugadores ?s - posesiones)
     ;; Identifica una posesion que se puede cocinar para obtener comida
     (cocinable ?pos - posesiones)
     ;; Identifica una posesion de tipo animal
     (animal ?pos - posesiones)
     ;; Asocia una adquisicion a un jugador
     (adquisicion ?a - adquisiciones ?j - jugadores)
-
     ;; Familiar considerado en el turno actual
     (familiar_actual ?f - numeros)
     ;; Mayor indice de familiar que tiene un jugador
     (familiar_max-jugador ?j - jugadores ?f - numeros)
     ;; Maximos familiares
     (familiar_max ?fm - numeros)
+
+    ;; Asocia un sembrado con un jugador
+    ;; id representara univocamente el sembrado. Es la ronda en que se creo el mismo
+    ;; nr identificara la ultima ronda en que se recolecto. Servira de control en la cosecha
+    (sembrado ?j - jugadores ?s - posesiones ?id ?nr - numeros)
   )
 
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; COSECHA ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; Recolectar sembrados
-  (:action COSECHA_recolectar-sembrado
+  ;; Cosecha un sembrado concreto
+  (:action COSECHA_cosechar
     :parameters
-      (?j - jugadores ?s - posesiones)
+      (?j - jugadores ?s - posesiones ?id ?r_cosechado ?r_actual - numeros)
     :precondition
       (and
         (fase-ronda COSECHA)
+        (not (cosecha RECOLECCION ?j))
+        (ronda-actual ?r_actual)
+
+        ;; Se recolectan recursos sembrables de sembrados no considerados
         (accion-complex SEMBRAR ?s)
-        ;; No se ha recolectado aun el sembrado
-        (not (cosecha_recolectar-sembrado ?j ?s))
+        ;; Selecciona un campo que aun no ha sido sembrado
+        (not (= ?r_cosechado ?r_actual))
+        (sembrado ?j ?s ?id ?r_cosechado)
       )
     :effect
       (and
-        (decrease (cosechable ?j ?s) 1)
         (increase (recursos ?j ?s) 1)
-        (cosecha_recolectar-sembrado ?j ?s)
+        (decrease (sembrado ?j ?s ?id) 1)
+        (not (sembrado ?j ?s ?id ?r_cosechado))
+        (sembrado ?j ?s ?id ?r_actual)
 
-        ;; Sembrado vacio vuelve a ser arado
-        ;; rawr - Asume que no hay mas de un sembrado del mismo tipo!
-        ;; rawr - (cosechable no referencia a un sembrado concreto, sino a los recursos)
-        (when (= (cosechable ?j ?s) 0)
+        ;; Si el sembrado se agota, se elimina y se anyade un arado
+        (when (= (sembrado ?j ?s ?id) 0)
           (and
-            (decrease (sembrado ?j ?s) 1)
+            ;; Elimina predicado asociado al sembrado
+            (not (sembrado ?j ?s ?id ?r_actual))
             (increase (arado ?j) 1)
           )
         )
       )
   )
 
-  ;; Comprueba que todos los sembrados de un jugador han sido recolectados
+  ;; Recolecta los campos de los jugadores
   (:action COSECHA_recolectar
     :parameters
-      (?j - jugadores)
+      (?nr - numeros)
     :precondition
       (and
         (fase-ronda COSECHA)
-        ;; El jugador aun no ha completado la recoleccion
-        (not (cosecha RECOLECCION ?j))
-        ;; No existe sembrado por cosechar
+        ;; ur representa la última ronda en que se cosecho el sembrado
+        (ronda-actual ?nr)
+        ;; No queda ningun sembrado por cosechar en la ronda actual
         (not
-          (exists (?s - posesiones)
+          (exists (?j - jugadores ?s - posesiones ?id ?r_cosechado - numeros)
             (and
-              (accion-complex SEMBRAR ?s)
-              (> (cosechable ?j ?s) 0)
-              (not (cosecha_recolectar-sembrado ?j ?s))
+              ;; Sembrado cosechado en una ronda distinta a la actual
+              (not (= ?r_cosechado ?nr))
+              (sembrado ?j ?s ?id ?r_cosechado)
             )
           )
         )
       )
     :effect
-      (cosecha RECOLECCION ?j)
+      (forall (?j - jugadores) (cosecha RECOLECCION ?j))
   )
 
   ;; Alimenta familiares
@@ -571,7 +578,7 @@
       )
   )
 
-   ;; Construye una habitacion
+   ;; Reforma la casa
   (:action ACCION_Reformar-Casa
   	:parameters
       (?j - jugadores ?m1 ?m2 - posesiones)
@@ -684,7 +691,7 @@
 
   (:action ACCION_Sembrar
   	:parameters
-      (?j - jugadores ?s - posesiones)
+      (?j - jugadores ?s - posesiones ?nr - numeros)
     :precondition
       (and
       	  ;; Control
@@ -695,6 +702,9 @@
 	      ;; Acciones
 	      (>= (recursos ?j ?s) 1)
 	      (> (arado ?j) 0)
+
+        ;; Se utilizara como id del sembrado
+        (ronda-actual ?nr)
       )
     :effect
       (and
@@ -705,8 +715,10 @@
       	;; Acciones
       	(decrease (recursos ?j ?s) 1)
       	(decrease (arado ?j) 1)
-      	(increase (sembrado ?j ?s) 1)
-      	(increase (cosechable ?j ?s) 2)
+
+        ;; Crea un nuevo sembrado con los recursos que le correspondan (segun la semilla)
+        (sembrado ?j ?s ?nr CERO)
+        (assign (sembrado ?j ?s ?nr) (sembrable ?s))
       )
   )
 
