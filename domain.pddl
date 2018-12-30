@@ -14,7 +14,7 @@
     J1 J2 - jugadores
     HORNO COCINA - adquisiciones
     MADERA ADOBE PIEDRA JUNCO CEREAL HORTALIZA COMIDA OVEJA JABALI VACA - posesiones
-    COGER COGER-ACUM REFORMAR CONS-HAB AMPLIAR ARAR VALLAR SEMBRAR COMPRAR-HORNO COMPRAR-COCINA HORNEAR - acciones
+    COGER COGER-ACUM REFORMAR CONS-HAB AMPLIAR ARAR VALLAR COMPRAR SEMBRAR HORNEAR - acciones
   )
 
   (:functions
@@ -666,7 +666,7 @@
 	      (jugador-actual ?j)
 	      ;; Acciones
 	      (> (huecos ?j) 0)
-	      (> (recursos ?j MADERA) 4)
+	      (>= (recursos ?j MADERA) 4)
       )
     :effect
       (and
@@ -722,14 +722,14 @@
         (not (exists (?js - jugadores) (adquisicion HORNO ?js)))
         (>= (recursos ?j ADOBE) 3)
         (>= (recursos ?j PIEDRA) 1)
-	      (not (accion-realizada COMPRAR-HORNO))
+	      (not (accion-realizada COMPRAR))
       )
     :effect
       (and
       	;; Control
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)
-        (accion-realizada COMPRAR-HORNO)
+        (accion-realizada COMPRAR)
         ;; Acciones
         (decrease (recursos ?j ADOBE) 3)
         (decrease (recursos ?j PIEDRA) 1)
@@ -748,14 +748,14 @@
         ;; Ningun jugador ha comprado ya la cocina
         (not (exists (?js - jugadores) (adquisicion COCINA ?js)))
         (>= (recursos ?j ADOBE) 4)
-	      (not (accion-realizada COMPRAR-COCINA))
+	      (not (accion-realizada COMPRAR))
       )
     :effect
       (and
       	;; Control
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)
-        (accion-realizada COMPRAR-COCINA)
+        (accion-realizada COMPRAR)
         ;; Acciones
         (decrease (recursos ?j ADOBE) 4)
         (adquisicion COCINA ?j)
