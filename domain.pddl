@@ -22,7 +22,6 @@
     (total-cost)
     ;; Penalizaciones asociadas a cada jugador
     (penalty ?j - jugadores)
-
     ;; Total de familiares de cada jugador
     (familiares-jugador ?fj - jugadores)
     ;; Numero de huecos restantes
@@ -257,19 +256,8 @@
         )
       )
     :effect
-      (and
-        ;;(not (fase-ronda COSECHA))
-        ;;(fase-ronda CAMBIO_RONDA)
-        ;; Elimina predicados auxiliares al final de la cosecha
-        ;; (forall (?j - jugadores ?fc - fase-cosecha) (not (cosecha ?fc ?j)))
-
-        ;; Al finalizar la cosecha, termina la partida
-        ;; Actualiza costes globales del plan
-        ;;(increase (total-cost) 1)
-        ;;(increase (total-cost) (penalty J1))
-        ;;(forall (?j - jugadores) (increase (total-cost) (penalty ?j)))
-        (fase-partida FIN)
-      )
+      ;; Al finalizar la cosecha, termina la partida
+      (fase-partida FIN)
   )
 
 

@@ -15,6 +15,7 @@
         (= (familiares-jugador J2) 2)
         (familiar_max-jugador J1 DOS)
         (familiar_max-jugador J2 DOS)
+        ;;;; DEPENDIENTE DE LOS VALORES ANTERIORES ;;;;
         ;; Mismas habitaciones que familiares
           (= (habitaciones J1) 2)
           (= (habitaciones J2) 2)
