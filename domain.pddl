@@ -88,6 +88,8 @@
     (familiar_max-jugador ?j - jugadores ?f - numeros)
     ;; Maximos familiares
     (familiar_max ?fm - numeros)
+
+    (accion-complex-bloqueada ?a - acciones ?p - posesiones ?r - numeros)
   )
 
 
@@ -351,6 +353,10 @@
       )
     :effect
       (and
+        ;; Libera acciones en la ronda
+        (accion-complex-bloqueada COGER-ACUM ADOBE ?r2)
+        (accion-complex-bloqueada COGER-ACUM OVEJA ?r2)
+        (accion-complex-bloqueada COGER-ACUM COMIDA ?r2)
         (not (fase-ronda CAMBIO_RONDA))
         (fase-ronda REPOSICION)
         (not (ronda-actual ?r1))
@@ -474,9 +480,11 @@
   ;; Recoge un recurso de la reserva (acumulable; se lleva todo lo que hay)
   (:action ACCION_Coger-Acumulable
     :parameters
-      (?j - jugadores ?r - posesiones)
+      (?j - jugadores ?r - posesiones ?nr - numeros)
     :precondition
       (and
+        (not (exists (?nr - numeros) (accion-complex-bloqueada COGER-ACUM ?r ?nr)))
+
       	;; Control
         (jugador-actual ?j)
         (fase-ronda JORNADA)

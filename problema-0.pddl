@@ -108,6 +108,11 @@
         (accion-complex COGER-ACUM COMIDA)
         (accion-complex SEMBRAR HORTALIZA)
         (accion-complex SEMBRAR CEREAL)
+
+      ;; Bloqueo de acciones segun ronda
+        (accion-complex-bloqueada COGER-ACUM ADOBE TRES)
+        (accion-complex-bloqueada COGER-ACUM OVEJA TRES)
+        (accion-complex-bloqueada COGER-ACUM COMIDA TRES)
   )
 
   (:goal
