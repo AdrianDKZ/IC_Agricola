@@ -18,6 +18,11 @@
   )
 
   (:functions
+    ;; Evaluacion del plan global
+    (total-cost)
+    ;; Penalizaciones asociadas a cada jugador
+    (penalty ?j - jugadores)
+
     ;; Total de familiares de cada jugador
     (familiares-jugador ?fj - jugadores)
     ;; Numero de huecos restantes
@@ -200,6 +205,7 @@
         (increase (recursos ?j COMIDA) (cocinable ?pos))
         (decrease (recursos ?j ?pos) 1)
         (when (animal ?pos) (decrease (animales ?j) 1))
+        (increase (total-cost) 25)
       )
   )
 
@@ -229,9 +235,12 @@
       )
     :effect
       (and
+        ;; Actualiza penalizaciones
         ;; Jugador mendiga tantas unidades de comida como le sean necesarias
-        (increase (recursos ?j COMIDA) (- (* (familiares-jugador ?j) 2) (recursos ?j COMIDA)))
         (increase (mendigo ?j) (- (* (familiares-jugador ?j) 2) (recursos ?j COMIDA)))
+        (increase (recursos ?j COMIDA) (- (* (familiares-jugador ?j) 2) (recursos ?j COMIDA)))
+        ;; Evaluacion
+        (increase (total-cost) (* (- (* (familiares-jugador ?j) 2) (recursos ?j COMIDA)) 45))
       )
   )
 
@@ -253,6 +262,12 @@
         ;;(fase-ronda CAMBIO_RONDA)
         ;; Elimina predicados auxiliares al final de la cosecha
         ;; (forall (?j - jugadores ?fc - fase-cosecha) (not (cosecha ?fc ?j)))
+
+        ;; Al finalizar la cosecha, termina la partida
+        ;; Actualiza costes globales del plan
+        ;;(increase (total-cost) 1)
+        ;;(increase (total-cost) (penalty J1))
+        ;;(forall (?j - jugadores) (increase (total-cost) (penalty ?j)))
         (fase-partida FIN)
       )
   )
@@ -489,6 +504,11 @@
         (accion-realizada-complex COGER ?r)
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)
+        ;; Evaluacion
+        (increase (total-cost) 23)
+        (when (not (= ?r COMIDA))
+          (increase (total-cost) 2)
+        )
       )
   )
 
@@ -516,6 +536,11 @@
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)
         (accion-realizada-complex COGER-ACUM ?r)
+        ;; Metrica
+        (increase (total-cost) 20)
+        (when (not (= ?r COMIDA))
+          (increase (total-cost) 5)
+        )
       )
   )
 
@@ -589,6 +614,8 @@
       	(accion-realizada CONS-HAB)
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)
+        ;; Evaluacion
+        (increase (total-cost) 18)
       )
   )
 
@@ -619,6 +646,8 @@
       	(accion-realizada REFORMAR)
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)
+        ;; Evaluacion
+        (increase (total-cost) 15)
       )
   )
 
@@ -649,6 +678,8 @@
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)
         (accion-realizada AMPLIAR)
+        ;; Evaluacion
+        (increase (total-cost) 10)
       )
   )
 
@@ -673,6 +704,8 @@
       	(accion-realizada ARAR)
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)
+        ;; Evaluacion
+        (increase (total-cost) 18)
       )
   )
 
@@ -700,6 +733,8 @@
       	(accion-realizada VALLAR)
         (not (fase-ronda JORNADA))
         (fase-ronda ROTA_TURNO)
+        ;; Evaluacion
+        (increase (total-cost) 18)
       )
   )
 
@@ -760,6 +795,8 @@
         (decrease (recursos ?j ADOBE) 3)
         (decrease (recursos ?j PIEDRA) 1)
         (adquisicion HORNO ?j)
+        ;; Evaluacion
+        (increase (total-cost) 15)
       )
   )
 
@@ -785,6 +822,8 @@
         ;; Acciones
         (decrease (recursos ?j ADOBE) 4)
         (adquisicion COCINA ?j)
+        ;; Evaluacion
+        (increase (total-cost) 15)
       )
   )
 
@@ -810,6 +849,8 @@
         ;;Accion
         (decrease (recursos ?j CEREAL) 1)
         (increase (recursos ?j COMIDA) (hornear ?a))
+        ;; Evaluacion
+        (increase (total-cost) 15)
       )
 
   )

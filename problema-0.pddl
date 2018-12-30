@@ -6,7 +6,7 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;; Maximos
         ;; Ronda - MAXIMO DE OCHO
-          (ronda-final SIETE)
+          (ronda-final CUATRO)
         ;; Familiares - MAXIMO DE OCHO
           (familiar_max TRES)
           (= (familiares-max) 3)
@@ -31,7 +31,7 @@
       (fase-ronda REPOSICION)
       (fase-partida RONDAS)
     ;; Elementos iniciales
-      ;;Materiales iniciales de la casa        
+      ;;Materiales iniciales de la casa
         (material_casa J1 MADERA)
         (material_casa J2 MADERA)
       ;; Recursos que se obtienen al sembrar una semilla de un tipo
@@ -48,8 +48,8 @@
     ;; Inicializacion de las funciones
       ;; Contadores de métrica
         (= (total-cost) 0)
-        (= (pentaly J1) 0)
-        (= (pentaly J2) 0)
+        (= (penalty J1) 0)
+        (= (penalty J2) 0)
       ;; Recursos de los jugadores
   	    (= (recursos J1 ADOBE) 0)
   	    (= (recursos J1 JUNCO) 0)
@@ -88,7 +88,7 @@
     ;; Constantes del problema
 	    (next-jugador J1 J2)
 	    (next-material MADERA ADOBE) (next-material ADOBE PIEDRA)
-      (next-numero UNO DOS) (next-numero DOS TRES) (next-numero TRES CUATRO) (next-numero CUATRO CINCO) 
+      (next-numero UNO DOS) (next-numero DOS TRES) (next-numero TRES CUATRO) (next-numero CUATRO CINCO)
       (next-numero CINCO SEIS) (next-numero SEIS SIETE) (next-numero SIETE OCHO)
     ;; Determinacion de los elementos
       ;; Recursos que se pueden cocinar para obtener comida
@@ -120,4 +120,5 @@
   (:goal
     (fase-partida FIN)
   )
+  (:metric minimize (total-cost))
 )
