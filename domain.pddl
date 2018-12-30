@@ -249,10 +249,11 @@
       )
     :effect
       (and
-        (not (fase-ronda COSECHA))
-        (fase-ronda CAMBIO_RONDA)
+        ;;(not (fase-ronda COSECHA))
+        ;;(fase-ronda CAMBIO_RONDA)
         ;; Elimina predicados auxiliares al final de la cosecha
-        (forall (?j - jugadores ?fc - fase-cosecha) (not (cosecha ?fc ?j)))
+        ;; (forall (?j - jugadores ?fc - fase-cosecha) (not (cosecha ?fc ?j)))
+        (fase-partida FIN)
       )
   )
 
@@ -351,14 +352,15 @@
   ;; Si la ronda ha terminado y no es la última (existe next-numero), se cambia de ronda
   (:action nueva-ronda
   	:parameters
-  		(?r1 ?r2 - numeros)
+  		(?r1 ?r2 ?rf - numeros)
     :precondition
       (and
         (fase-ronda CAMBIO_RONDA)
         (next-numero ?r1 ?r2)
         (ronda-actual ?r1)
-        ;; El cambio de ronda en cosecha es distinto
-        (not (ronda-actual CUATRO))
+        (ronda-final ?rf)
+        ;; El cambio de ronda en cosecha (ronda final) es distinto
+        (not (ronda-actual ?rf))
       )
     :effect
       (and
@@ -369,12 +371,15 @@
       )
   )
 
-  ;; Cambio de ronda con COSECHA
+  ;; Cambio de ronda con COSECHA si es la ultima ronda
   (:action cambia-ronda_cosecha
+    :parameters
+      (?rf - numeros)
     :precondition
       (and
         (fase-ronda FIN)
-        (ronda-actual CUATRO)
+        (ronda-actual ?rf)
+        (ronda-final ?rf)
       )
     :effect
       (and
@@ -383,12 +388,15 @@
       )
   )
 
-  ;; Pasa a fase de cambio de ronda
+  ;; Pasa a fase de cambio de ronda si no es la ultima
   (:action cambia-ronda
+    :parameters
+      (?rf - numeros)
     :precondition
       (and
         (fase-ronda FIN)
-        (not (ronda-actual CUATRO))
+        (ronda-final ?rf)
+        (not (ronda-actual ?rf))
       )
     :effect
       (and
@@ -438,24 +446,24 @@
       )
   )
 
-  ;; Si se han jugado todas las rondas (numero-ronda -> ULTIMA), la partida termina
-  (:action fin-partida
-  	:parameters
-  		(?rf - numeros)
-    :precondition
-      (and
-        ;; Si la ronda actual coincide con la final, la partida termina
-        (fase-ronda CAMBIO_RONDA)
-        (fase-partida RONDAS)
-        (ronda-actual ?rf)
-        (ronda-final ?rf)
-      )
-    :effect
-      (and
-        (not (fase-partida RONDAS))
-        (fase-partida FIN)
-      )
-  )
+;;  ;; Si se han jugado todas las rondas (numero-ronda -> ULTIMA), la partida termina
+;;  (:action fin-partida
+;;  	:parameters
+;;  		(?rf - numeros)
+;;    :precondition
+;;      (and
+;;        ;; Si la ronda actual coincide con la final, la partida termina
+;;        (fase-ronda CAMBIO_RONDA)
+;;        (fase-partida RONDAS)
+;;        (ronda-actual ?rf)
+;;        (ronda-final ?rf)
+;;      )
+;;    :effect
+;;      (and
+;;        (not (fase-partida RONDAS))
+;;        (fase-partida FIN)
+;;      )
+;;  )
 
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ACCIONES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

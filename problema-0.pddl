@@ -3,7 +3,7 @@
   )
   (:init
     ;; Ronda y mecanismos de iteracion
-      (ronda-final CUATRO)
+      (ronda-final SIETE)
       (ronda-actual UNO)
       (jugador-actual J1)
       (familiar_actual UNO)
