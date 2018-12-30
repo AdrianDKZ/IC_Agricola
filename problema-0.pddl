@@ -110,9 +110,8 @@
         (accion-complex SEMBRAR CEREAL)
 
       ;; Bloqueo de acciones segun ronda
-        (accion-complex-bloqueada COGER-ACUM ADOBE TRES)
-        (accion-complex-bloqueada COGER-ACUM OVEJA TRES)
-        (accion-complex-bloqueada COGER-ACUM COMIDA TRES)
+        (accion-complex-bloqueada COGER-ACUM ADOBE UNO)
+        (accion-complex-bloqueada COGER-ACUM COMIDA UNO)
   )
 
   (:goal

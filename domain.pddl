@@ -354,9 +354,8 @@
     :effect
       (and
         ;; Libera acciones en la ronda
-        (accion-complex-bloqueada COGER-ACUM ADOBE ?r2)
-        (accion-complex-bloqueada COGER-ACUM OVEJA ?r2)
-        (accion-complex-bloqueada COGER-ACUM COMIDA ?r2)
+        (not (accion-complex-bloqueada COGER-ACUM COMIDA ?r2))
+        (not (accion-complex-bloqueada COGER-ACUM ADOBE ?r2))
         (not (fase-ronda CAMBIO_RONDA))
         (fase-ronda REPOSICION)
         (not (ronda-actual ?r1))
