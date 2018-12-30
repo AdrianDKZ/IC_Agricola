@@ -163,6 +163,8 @@
         (fase-ronda COSECHA)
         ;; No se ha completado la alimentacion en la cosecha actual
         (not (cosecha ALIMENTACION ?j))
+        ;; Se ha completado la fase de recoleccion
+        (cosecha RECOLECCION ?j)
         ;; Recursos suficientes para alimentar a todos los familiares
         (>= (recursos ?j COMIDA) (* (familiares-jugador ?j) 2))
       )
