@@ -6,7 +6,7 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;; Maximos
         ;; Ronda - MAXIMO DE OCHO
-          (ronda-final CUATRO)
+          (ronda-final OCHO)
         ;; Familiares - MAXIMO DE OCHO
           (familiar_max TRES)
           (= (familiares-max) 3)
