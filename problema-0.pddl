@@ -3,6 +3,7 @@
   )
   (:init
     ;; Ronda y mecanismos de iteracion
+      (ronda-final CUATRO)
       (ronda-actual UNO)
       (jugador-actual J1)
       (familiar_actual UNO)
@@ -68,6 +69,8 @@
 	    (next-jugador J1 J2)
 	    (next-material MADERA ADOBE) (next-material ADOBE PIEDRA)
       (next-numero UNO DOS) (next-numero DOS TRES) (next-numero TRES CUATRO)
+      (next-numero CUATRO CINCO) (next-numero CINCO SEIS) (next-numero SEIS SIETE)
+      (next-numero SIETE OCHO)
       ;; Recursos que se pueden cocinar para obtener comida
         (cocinable HORTALIZA)
         (cocinable OVEJA)

@@ -10,7 +10,7 @@
     REPOSICION INICIO JORNADA ROTA_TURNO FIN COSECHA CAMBIO_RONDA - fase-ronda
     RONDAS FIN - fase-juego
     RECOLECCION ALIMENTACION - fase-cosecha
-    CERO UNO DOS TRES CUATRO - numeros
+    CERO UNO DOS TRES CUATRO CINCO SEIS SIETE OCHO - numeros
     J1 J2 - jugadores
     HORNO COCINA - adquisiciones
     MADERA ADOBE PIEDRA JUNCO CEREAL HORTALIZA COMIDA OVEJA JABALI VACA - posesiones
@@ -49,6 +49,8 @@
   )
 
   (:predicates
+    ;; Ultima ronda de la partida
+    (ronda-final ?rf - numeros)
   	;; Ronda actual
   	(ronda-actual ?r - numeros)
     ;; Jugador actual
@@ -439,12 +441,14 @@
   ;; Si se han jugado todas las rondas (numero-ronda -> ULTIMA), la partida termina
   (:action fin-partida
   	:parameters
-  		(?c - numeros)
+  		(?rf - numeros)
     :precondition
       (and
+        ;; Si la ronda actual coincide con la final, la partida termina
         (fase-ronda CAMBIO_RONDA)
-        (ronda-actual CUATRO)
         (fase-partida RONDAS)
+        (ronda-actual ?rf)
+        (ronda-final ?rf)
       )
     :effect
       (and
